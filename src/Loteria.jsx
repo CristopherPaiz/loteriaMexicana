@@ -80,7 +80,7 @@ const Loteria = () => {
   }, [isPaused, isPlaying]);
 
   const preloadImage = (cardNumber) => {
-    const imageUrl = `/images/${typeCard}/${cardNumber}.webp`;
+    const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
     const img = new Image();
     img.src = imageUrl;
     img.onload = () => {
