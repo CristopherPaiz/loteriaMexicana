@@ -10,7 +10,7 @@ const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, n
         alt={`Carta ${number}`}
         style={{
           opacity: isPlaying ? (isPaused ? 0.5 : 1) : 1,
-          transition: "opacity 0.3s ease-in-out",
+          transition: "opacity 0.3s all",
         }}
       />
       {isPlaying && (
