@@ -1,9 +1,17 @@
 import PropTypes from "prop-types";
 import Card from "./Card";
 
-const MainPanel = ({ currentCard, togglePlay, startGame, drawNextCard, stopGame, isPlaying, isPaused, typeCard }) => (
+const MainPanel = ({ currentCard, togglePlay, startGame, drawNextCard, stopGame, isPlaying, isPaused, typeCard, isImageLoaded, nextImageUrl }) => (
   <div className="main-panel">
-    <Card number={currentCard} onClick={togglePlay} isPaused={isPaused} typeCard={typeCard} isPlaying={isPlaying} />
+    <Card
+      number={currentCard}
+      onClick={togglePlay}
+      isPaused={isPaused}
+      typeCard={typeCard}
+      isPlaying={isPlaying}
+      isImageLoaded={isImageLoaded}
+      nextImageUrl={nextImageUrl}
+    />
     <div
       style={{
         height: "100px",
@@ -38,4 +46,6 @@ MainPanel.propTypes = {
   isPlaying: PropTypes.bool.isRequired,
   isPaused: PropTypes.bool.isRequired,
   typeCard: PropTypes.string.isRequired,
+  isImageLoaded: PropTypes.bool.isRequired,
+  nextImageUrl: PropTypes.string.isRequired,
 };

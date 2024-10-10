@@ -9,6 +9,7 @@ const INITIAL_CARD_STYLE = "HD"; // HD or SD
 const CARD_LENGTH = 54;
 const CARD_SHOW_TOP_MOBILE = 5;
 const CARD_SHOW_TOP_DESKTOP = 10;
+const PRELOAD_TIME = 1; // Tiempo en segundos para precargar la siguiente imagen
 const isMobile = window.innerWidth <= 768;
 
 const Loteria = () => {
@@ -24,6 +25,10 @@ const Loteria = () => {
   const timerRef = useRef(null);
   const [time, setTime] = useState(TIME_BETWEEN_CARDS);
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [nextImageUrl, setNextImageUrl] = useState("");
+
+  const [displayedCard, setDisplayedCard] = useState(null);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -45,21 +50,45 @@ const Loteria = () => {
   useEffect(() => {
     if (isPlaying && !isPaused) {
       timerRef.current = setTimeout(drawNextCard, time * 1000);
+
+      // Precargar la siguiente imagen
+      const preloadTimer = setTimeout(() => {
+        if (deck.length > 0) {
+          const nextCardNumber = deck[deck.length - 1];
+          preloadImage(nextCardNumber);
+        }
+      }, (time - PRELOAD_TIME) * 1000);
+
+      return () => {
+        clearTimeout(timerRef.current);
+        clearTimeout(preloadTimer);
+      };
     } else {
       clearTimeout(timerRef.current);
     }
-    return () => clearTimeout(timerRef.current);
-  }, [isPlaying, isPaused, currentCard]);
+  }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
 
-  // Evitar salir o recargar la página accidentalmente
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      event.preventDefault();
-      event.returnValue = ""; // Chrome requiere este retorno para mostrar la advertencia
+    if (isPlaying || isPaused) {
+      const handleBeforeUnload = (event) => {
+        event.preventDefault();
+        event.returnValue = "";
+      };
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }
+  }, [isPaused, isPlaying]);
+
+  const preloadImage = (cardNumber) => {
+    const imageUrl = `/images/${typeCard}/${cardNumber}.jpg`;
+    const img = new Image();
+    img.src = imageUrl;
+    img.onload = () => {
+      setIsImageLoaded(true);
+      setNextImageUrl(imageUrl);
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+    img.onerror = () => setIsImageLoaded(false);
+  };
 
   const startGame = () => {
     const shuffledDeck = shuffleDeck(initializeDeck());
@@ -74,9 +103,16 @@ const Loteria = () => {
     if (deck.length > 0) {
       const newCard = deck.pop();
       setCurrentCard(newCard);
-      setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
       setDeck([...deck]);
       playSound(newCard);
+      setIsImageLoaded(false);
+
+      // Actualizamos displayedCard después de un pequeño retraso
+      setTimeout(() => {
+        setDisplayedCard(newCard);
+        setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
+      }, 300); // Un pequeño retraso para asegurar que la carta principal se muestre primero
+      
     } else {
       setIsPlaying(false);
     }
@@ -84,7 +120,7 @@ const Loteria = () => {
 
   const playSound = (cardNumber) => {
     if (audioRef.current) {
-      audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}. ${activeVoice}.mp3`;
+      audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}.${activeVoice}.mp3`;
       audioRef.current.play();
     }
   };
@@ -97,7 +133,7 @@ const Loteria = () => {
     if (audioRef.current) {
       const currentTime = audioRef.current.currentTime;
       setActiveVoice(voice);
-      audioRef.current.src = `/sounds/${voice}/${currentCard}. ${voice}.mp3`;
+      audioRef.current.src = `/sounds/${voice}/${currentCard}.${voice}.mp3`;
       audioRef.current.currentTime = currentTime;
       if (!audioRef.current.paused) {
         audioRef.current.play();
@@ -115,12 +151,18 @@ const Loteria = () => {
       setDeck(shuffleDeck(initializeDeck()));
       setPastCards([]);
       setCurrentCard(1);
+      setIsImageLoaded(false);
+      setNextImageUrl("");
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     }
   };
 
   return (
     <div className="loteria-container">
-      <TopPanel pastCards={pastCards} typeCard={typeCard} />
+      <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} />
       {isMobile && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
       {!isMobile && !isPlaying && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
       <MainPanel
@@ -132,8 +174,10 @@ const Loteria = () => {
         isPlaying={isPlaying}
         isPaused={isPaused}
         typeCard={typeCard}
+        isImageLoaded={isImageLoaded}
+        nextImageUrl={nextImageUrl}
       />
-      <p>* Da toca la imagen para pausar el juego</p>
+      <p>* Toca la imagen para pausar el juego</p>
       <RightPanel
         showMenu={showMenu}
         activeVoice={activeVoice}
