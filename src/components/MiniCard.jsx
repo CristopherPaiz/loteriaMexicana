@@ -6,7 +6,7 @@ const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
 
   useEffect(() => {
     if (isDisplayed) {
-      setIsVisible(true);
+      setTimeout(() => setIsVisible(true), 400);
     }
   }, [isDisplayed]);
 
@@ -15,10 +15,10 @@ const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
       className="mini-card"
       style={{
         zIndex: totalCards - index,
-        left: `${index * 20}px`,
+        left: `${index}px`,
         position: "relative",
         opacity: isVisible ? 1 : 0,
-        transition: "opacity 0.3s ease-in-out",
+        transition: "opacity 0.4s ease-in-out",
       }}
     >
       <img src={`/${typeCard}WEBP/${number}.webp`} alt={`Carta ${number}`} />

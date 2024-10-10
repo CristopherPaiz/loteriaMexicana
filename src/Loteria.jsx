@@ -108,11 +108,8 @@ const Loteria = () => {
       setIsImageLoaded(false);
 
       // Actualizamos displayedCard después de un pequeño retraso
-      setTimeout(() => {
-        setDisplayedCard(newCard);
-        setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
-      }, 300); // Un pequeño retraso para asegurar que la carta principal se muestre primero
-      
+      setDisplayedCard(newCard);
+      setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
     } else {
       setIsPlaying(false);
     }
@@ -120,7 +117,7 @@ const Loteria = () => {
 
   const playSound = (cardNumber) => {
     if (audioRef.current) {
-      audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}.${activeVoice}.mp3`;
+      audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}. ${activeVoice}.mp3`;
       audioRef.current.play();
     }
   };
@@ -133,7 +130,7 @@ const Loteria = () => {
     if (audioRef.current) {
       const currentTime = audioRef.current.currentTime;
       setActiveVoice(voice);
-      audioRef.current.src = `/sounds/${voice}/${currentCard}.${voice}.mp3`;
+      audioRef.current.src = `/sounds/${voice}/${currentCard}. ${voice}.mp3`;
       audioRef.current.currentTime = currentTime;
       if (!audioRef.current.paused) {
         audioRef.current.play();
