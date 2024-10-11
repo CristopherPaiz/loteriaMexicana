@@ -31,6 +31,7 @@ const Loteria = () => {
   const [displayedCard, setDisplayedCard] = useState(null);
   const [gameOver, setGameOver] = useState(false);
   const [countdown, setCountdown] = useState(TIME_BETWEEN_CARDS);
+  const [isReset, setIsReset] = useState(false);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -105,7 +106,12 @@ const Loteria = () => {
     setPastCardsAll([]);
     setGameOver(false);
     playSound("0. barajar");
-    drawNextCard();
+
+    if (!isReset && time >= 4) {
+      setTimeout(() => {
+        playSoundStart();
+      }, 2000);
+    }
   };
 
   const changeSoundTimerRef = useRef(null); // Nueva referencia para el temporizador del sonido
@@ -150,6 +156,15 @@ const Loteria = () => {
     if (audioRef.current) {
       audioRef.current.pause(); // Detener el sonido actual
       audioRef.current.src = `/sounds/sounds/${soundName}.mp3`;
+      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
+      audioRef.current.play();
+    }
+  };
+
+  const playSoundStart = () => {
+    if (audioRef.current) {
+      audioRef.current.pause(); // Detener el sonido actual
+      audioRef.current.src = `/sounds/mujer/1. mujer apertura.mp3`;
       audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
       audioRef.current.play();
     }
@@ -206,11 +221,23 @@ const Loteria = () => {
     <div className="loteria-container">
       <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
       {isMobile && <h1 className="title">Lotería Mexicana</h1>}
+      {pastCardsAll.length > 0 && (
+        <div style={{ textAlign: "center", fontSize: 15, position: "absolute", left: "0", top: "10px", right: "0" }}>
+          {pastCardsAll.length} / 54 (quedan {deck.length} cartas)
+        </div>
+      )}
       {!isMobile && !isPlaying && <h1 className="title">Lotería Mexicana</h1>}
       {gameOver ? (
         <div className="game-over">
           <h2>Se han acabado todas las cartas</h2>
-          <button onClick={startGame}>Reiniciar juego</button>
+          <button
+            onClick={() => {
+              setIsReset(true);
+              startGame();
+            }}
+          >
+            Reiniciar juego
+          </button>
         </div>
       ) : (
         <>
@@ -228,23 +255,25 @@ const Loteria = () => {
               nextImageUrl={nextImageUrl}
             />
             {isPlaying && !isPaused && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  color: "white",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  fontSize: "20px",
-                }}
-              >
-                {countdown}
+              <div>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    color: "white",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: "20px",
+                  }}
+                >
+                  {countdown}
+                </div>
               </div>
             )}
           </div>
