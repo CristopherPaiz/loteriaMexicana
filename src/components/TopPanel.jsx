@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MiniCard from "./MiniCard";
 import PropTypes from "prop-types";
 
@@ -8,6 +8,27 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (isModalOpen) {
+        event.preventDefault();
+        closeModal();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      window.history.pushState(null, "", window.location.href);
+    }
+  }, [isModalOpen]);
+
   return (
     <>
       <div className="top-panel" style={{ position: "relative", height: "100px", cursor: "pointer" }} onClick={openModal}>
@@ -15,7 +36,6 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
           <MiniCard key={card} number={card} index={index} totalCards={pastCards.length} typeCard={typeCard} isDisplayed={card === displayedCard} />
         ))}
       </div>
-
       {isModalOpen && (
         <div
           style={{
@@ -52,9 +72,29 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
                 position: "sticky",
                 top: 0,
                 zIndex: 1,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              <h2 style={{ margin: 0, color: "black", textAlign: "center" }}>Todas las Cartas</h2>
+              <h2 style={{ margin: 0, color: "black" }}>Todas las Cartas</h2>
+              <div onClick={closeModal} style={{ cursor: "pointer", color: "black" }}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M18 6l-12 12" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              </div>
             </div>
             <div
               style={{
