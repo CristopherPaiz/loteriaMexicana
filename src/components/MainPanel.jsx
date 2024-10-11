@@ -16,7 +16,7 @@ const MainPanel = ({ currentCard, togglePlay, startGame, drawNextCard, stopGame,
       style={{
         height: "100px",
         gap: "5px",
-        width: "290px",
+        width: "288px",
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "center",
