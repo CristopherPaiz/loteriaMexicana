@@ -5,7 +5,7 @@ import PropTypes from "prop-types";
 const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const openModal = () => setIsModalOpen(true);
+  const openModal = () => pastCardsAll.length > 0 && setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   useEffect(() => {

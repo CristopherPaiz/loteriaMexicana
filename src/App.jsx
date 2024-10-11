@@ -166,6 +166,19 @@ const styles = `
   opacity: 0.5;
   }
 
+  .game-over{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 400px;
+  }
+
+  .title{
+   text-align: center;
+   margin: 0px 5px 10px 5px;
+   }
+
   @media (max-width: 768px) {
     .right-panel {
       width: 50%;

@@ -28,8 +28,9 @@ const Loteria = () => {
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [nextImageUrl, setNextImageUrl] = useState("");
-
   const [displayedCard, setDisplayedCard] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [countdown, setCountdown] = useState(TIME_BETWEEN_CARDS);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -52,7 +53,6 @@ const Loteria = () => {
     if (isPlaying && !isPaused) {
       timerRef.current = setTimeout(drawNextCard, time * 1000);
 
-      // Precargar la siguiente imagen
       const preloadTimer = setTimeout(() => {
         if (deck.length > 0) {
           const nextCardNumber = deck[deck.length - 1];
@@ -70,15 +70,20 @@ const Loteria = () => {
   }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
 
   useEffect(() => {
-    if (isPlaying || isPaused) {
-      const handleBeforeUnload = (event) => {
-        event.preventDefault();
-        event.returnValue = "";
-      };
-      window.addEventListener("beforeunload", handleBeforeUnload);
-      return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    let intervalId;
+    if (isPlaying && !isPaused && countdown > 0) {
+      intervalId = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
     }
-  }, [isPaused, isPlaying]);
+    return () => clearInterval(intervalId);
+  }, [isPlaying, isPaused, countdown]);
+
+  useEffect(() => {
+    if (countdown === 0 && isPlaying && !isPaused) {
+      drawNextCard();
+    }
+  }, [countdown, isPlaying, isPaused]);
 
   const preloadImage = (cardNumber) => {
     const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
@@ -97,35 +102,71 @@ const Loteria = () => {
     setIsPlaying(true);
     setIsPaused(false);
     setPastCards([]);
+    setPastCardsAll([]);
+    setGameOver(false);
+    playSound("0. barajar");
     drawNextCard();
   };
 
+  const changeSoundTimerRef = useRef(null); // Nueva referencia para el temporizador del sonido
+
   const drawNextCard = () => {
+    clearTimeout(timerRef.current); // Limpiar cualquier temporizador pendiente
+    clearTimeout(changeSoundTimerRef.current); // Limpiar temporizador de cambio de carta pendiente
+
     if (deck.length > 0) {
       const newCard = deck.pop();
+
+      // Detener cualquier sonido en curso antes de encolar el nuevo sonido de "cambio carta"
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0; // Reiniciar el audio actual
+      }
+
+      if (time >= 4) {
+        // Reproducir el sonido de "cambio carta" 500ms antes del cambio
+        changeSoundTimerRef.current = setTimeout(() => {
+          playSound("0. cambio carta");
+        }, time * 1000 - 500); // Reproduce 500ms antes del tiempo de la carta
+      }
+
+      // Luego reproducir el sonido de la carta
+      playCardSound(newCard);
+
       setCurrentCard(newCard);
       setDeck([...deck]);
-      playSound(newCard);
       setIsImageLoaded(false);
-
-      // Actualizamos displayedCard después de un pequeño retraso
       setDisplayedCard(newCard);
       setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
-      setPastCardsAll((prev) => [newCard, ...prev]); // Guardamos todas las cartas
+      setPastCardsAll((prev) => [newCard, ...prev]);
+      setCountdown(time);
     } else {
       setIsPlaying(false);
+      setGameOver(true);
     }
   };
 
-  const playSound = (cardNumber) => {
+  const playSound = (soundName) => {
     if (audioRef.current) {
+      audioRef.current.pause(); // Detener el sonido actual
+      audioRef.current.src = `/sounds/sounds/${soundName}.mp3`;
+      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
+      audioRef.current.play();
+    }
+  };
+
+  const playCardSound = (cardNumber) => {
+    if (audioRef.current) {
+      audioRef.current.pause(); // Detener el sonido actual
       audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}. ${activeVoice}.mp3`;
+      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
       audioRef.current.play();
     }
   };
 
   const togglePlay = () => {
     setIsPaused(!isPaused);
+    playSound(isPaused ? "0. play" : "0. pause");
   };
 
   const handleVoiceChange = (voice) => {
@@ -149,9 +190,11 @@ const Loteria = () => {
       clearTimeout(timerRef.current);
       setDeck(shuffleDeck(initializeDeck()));
       setPastCards([]);
+      setPastCardsAll([]);
       setCurrentCard(1);
       setIsImageLoaded(false);
       setNextImageUrl("");
+      setGameOver(false);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -162,32 +205,63 @@ const Loteria = () => {
   return (
     <div className="loteria-container">
       <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
-      {isMobile && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
-      {!isMobile && !isPlaying && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
-      <MainPanel
-        currentCard={currentCard}
-        togglePlay={togglePlay}
-        startGame={startGame}
-        drawNextCard={drawNextCard}
-        stopGame={stopGame}
-        isPlaying={isPlaying}
-        isPaused={isPaused}
-        typeCard={typeCard}
-        isImageLoaded={isImageLoaded}
-        nextImageUrl={nextImageUrl}
-      />
-      <p>* Toca la imagen para pausar el juego</p>
-      <RightPanel
-        showMenu={showMenu}
-        activeVoice={activeVoice}
-        handleVoiceChange={handleVoiceChange}
-        setShowMenu={setShowMenu}
-        setTime={setTime}
-        time={time}
-        typeCard={typeCard}
-        setTypeCard={setTypeCard}
-      />
-      <MenuButton onClick={() => setShowMenu(!showMenu)} />
+      {isMobile && <h1 className="title">Lotería Mexicana</h1>}
+      {!isMobile && !isPlaying && <h1 className="title">Lotería Mexicana</h1>}
+      {gameOver ? (
+        <div className="game-over">
+          <h2>Se han acabado todas las cartas</h2>
+          <button onClick={startGame}>Reiniciar juego</button>
+        </div>
+      ) : (
+        <>
+          <div style={{ position: "relative" }}>
+            <MainPanel
+              currentCard={currentCard}
+              togglePlay={togglePlay}
+              startGame={startGame}
+              drawNextCard={drawNextCard}
+              stopGame={stopGame}
+              isPlaying={isPlaying}
+              isPaused={isPaused}
+              typeCard={typeCard}
+              isImageLoaded={isImageLoaded}
+              nextImageUrl={nextImageUrl}
+            />
+            {isPlaying && !isPaused && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(0, 0, 0, 0.5)",
+                  color: "white",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontSize: "20px",
+                }}
+              >
+                {countdown}
+              </div>
+            )}
+          </div>
+          <p>* Toca la imagen para pausar el juego</p>
+          <RightPanel
+            showMenu={showMenu}
+            activeVoice={activeVoice}
+            handleVoiceChange={handleVoiceChange}
+            setShowMenu={setShowMenu}
+            setTime={setTime}
+            time={time}
+            typeCard={typeCard}
+            setTypeCard={setTypeCard}
+          />
+          <MenuButton onClick={() => setShowMenu(!showMenu)} />
+        </>
+      )}
       <audio ref={audioRef} />
     </div>
   );
