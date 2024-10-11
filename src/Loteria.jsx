@@ -17,6 +17,7 @@ const Loteria = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [deck, setDeck] = useState([]);
   const [pastCards, setPastCards] = useState([]);
+  const [pastCardsAll, setPastCardsAll] = useState([]);
   const voice = ["hombre", "mujer", "nino", "joven"];
   const [activeVoice, setActiveVoice] = useState(voice[Math.floor(Math.random() * voice.length)]);
   const [showMenu, setShowMenu] = useState(false);
@@ -110,6 +111,7 @@ const Loteria = () => {
       // Actualizamos displayedCard después de un pequeño retraso
       setDisplayedCard(newCard);
       setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
+      setPastCardsAll((prev) => [newCard, ...prev]); // Guardamos todas las cartas
     } else {
       setIsPlaying(false);
     }
@@ -159,7 +161,7 @@ const Loteria = () => {
 
   return (
     <div className="loteria-container">
-      <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} />
+      <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
       {isMobile && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
       {!isMobile && !isPlaying && <h1 style={{ textAlign: "center", margin: "0px 5px 10px 5px" }}>Lotería Mexicana</h1>}
       <MainPanel
