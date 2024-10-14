@@ -295,9 +295,9 @@ const Loteria = () => {
         </>
       )}
       <audio ref={audioRef} />
-      <div style={{ display: "flex", flexDirection: "column", alignContent: "center", justifyContent: "center" }}>
-        <button onClick={() => setIsModalOpen(true)} className="bg-blue-500 text-white px-4 py-2 rounded">
-          Abrir Generador de Cartones
+      <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+        <button style={{ padding: "0.7rem 1.5rem", backgroundColor: "" }} onClick={() => setIsModalOpen(true)}>
+          Generador de Cartones
         </button>
       </div>
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />

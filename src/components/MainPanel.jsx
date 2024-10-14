@@ -23,11 +23,17 @@ const MainPanel = ({ currentCard, togglePlay, startGame, drawNextCard, stopGame,
         flexDirection: "column",
       }}
     >
-      {isPlaying ? <button onClick={drawNextCard}>Siguiente carta</button> : null}
+      {isPlaying ? (
+        <button style={{ backgroundColor: "green" }} onClick={drawNextCard}>
+          Siguiente carta
+        </button>
+      ) : null}
       {!isPlaying ? (
-        <button onClick={startGame}>Iniciar juego</button>
+        <button style={{ backgroundColor: "green", padding: "1rem 2rem" }} onClick={startGame}>
+          Iniciar juego
+        </button>
       ) : (
-        <button style={{ backgroundColor: "red" }} onClick={stopGame}>
+        <button style={{ backgroundColor: "red", padding: "1rem 2rem" }} onClick={stopGame}>
           Reiniciar
         </button>
       )}

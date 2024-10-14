@@ -14,7 +14,7 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
   const [stage, setStage] = useState("idle");
   const [imagesAdded, setImagesAdded] = useState(0);
   const [totalImages, setTotalImages] = useState(0);
-  const [isHalfCard, setIsHalfCard] = useState(false);
+  const [isHalfCard, setIsHalfCard] = useState(true);
 
   useEffect(() => {
     const container = document.createElement("div");
@@ -396,23 +396,21 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
         >
           ¿Cuántos cartones quieres imprimir?
         </h2>
-        <div style={{ margin: "1.5rem 0" }}>
-          {" "}
-          {/* my-6 */}
+        <div style={{ margin: " 1.5rem 0" }}>
           <label style={{ display: "inline-flex", alignItems: "center" }}>
-            <input type="checkbox" className="form-checkbox" checked={!isHalfCard} onChange={() => setIsHalfCard(false)} />
-            <span style={{ marginLeft: "0.5rem" }}>Carta</span>
+            <input style={{ fontSize: "2rem" }} type="checkbox" className="form-checkbox" checked={isHalfCard} onChange={() => setIsHalfCard(true)} />
+            <span style={{ marginLeft: "0.5rem", fontSize: "1.2rem" }}>Media Carta</span>
           </label>
           <label style={{ display: "inline-flex", alignItems: "center", marginLeft: "1.5rem" }}>
-            <input type="checkbox" className="form-checkbox" checked={isHalfCard} onChange={() => setIsHalfCard(true)} />
-            <span style={{ marginLeft: "0.5rem" }}>Media Carta</span>
+            <input type="checkbox" className="form-checkbox" checked={!isHalfCard} onChange={() => setIsHalfCard(false)} />
+            <span style={{ marginLeft: "0.5rem", fontSize: "1.2rem" }}>Carta</span>
           </label>
         </div>
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)", // grid-cols-3
-            gap: "1rem", // gap-4
+            gap: "0.1rem", // gap-4
             marginBottom: "1rem", // mb-4
           }}
         >
