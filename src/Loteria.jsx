@@ -3,6 +3,7 @@ import TopPanel from "./components/TopPanel";
 import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
 import MenuButton from "./components/MenuButton";
+import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 
 const TIME_BETWEEN_CARDS = 4;
 const INITIAL_CARD_STYLE = "HD"; // HD or SD
@@ -32,6 +33,7 @@ const Loteria = () => {
   const [gameOver, setGameOver] = useState(false);
   const [countdown, setCountdown] = useState(TIME_BETWEEN_CARDS);
   const [isReset, setIsReset] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -218,7 +220,7 @@ const Loteria = () => {
   };
 
   return (
-    <div className="loteria-container">
+    <div className="loteria-container relative">
       <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
       {isMobile && <h1 className="title">Lotería Mexicana</h1>}
       {pastCardsAll.length > 0 && (
@@ -278,6 +280,7 @@ const Loteria = () => {
             )}
           </div>
           <p>* Toca la imagen para pausar el juego</p>
+
           <RightPanel
             showMenu={showMenu}
             activeVoice={activeVoice}
@@ -292,6 +295,12 @@ const Loteria = () => {
         </>
       )}
       <audio ref={audioRef} />
+      <div style={{ display: "flex", flexDirection: "column", alignContent: "center", justifyContent: "center" }}>
+        <button onClick={() => setIsModalOpen(true)} className="bg-blue-500 text-white px-4 py-2 rounded">
+          Abrir Generador de Cartones
+        </button>
+      </div>
+      <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 };

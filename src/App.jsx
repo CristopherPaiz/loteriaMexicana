@@ -4,8 +4,8 @@ const styles = `
   .loteria-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
     font-family: Arial, sans-serif;
+    position: relative;
   }
 
   .top-panel {

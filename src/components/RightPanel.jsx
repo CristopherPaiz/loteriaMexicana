@@ -1,11 +1,9 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
-import BingoCardGenerator from "./BingoCardGenerator";
 
 const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, setTime, time, typeCard, setTypeCard }) => {
   const panelRef = useRef(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Cierra el menú si se hace clic fuera del RightPanel
   useEffect(() => {
@@ -50,11 +48,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           </button>
         </div>
         <h3 style={{ color: "black" }}>Imprimir cartones</h3>
-        <button onClick={() => setIsModalOpen(true)} className="bg-blue-500 text-white px-4 py-2 rounded">
-          Abrir Generador de Cartones
-        </button>
       </div>
-      <BingoCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 };
