@@ -346,7 +346,19 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
           </>
         );
       case "creating_pdf":
-        return <p className="text-center mt-2">Creando PDF: {progress}%</p>;
+        return (
+          <>
+            <p className="text-center mt-2">Creando PDF: {progress}%</p>;
+            <p className="text-center mt-1">
+              Imágenes agregadas: {imagesAdded} / {totalImages}
+            </p>
+            <p>
+              <small>Este proceso puede tardar unos minutos...</small>
+              <br />
+              <small>Por favor, no cierres esta ventana.</small>
+            </p>
+          </>
+        );
       case "completed":
         return <p className="text-center mt-2 text-green-600">¡Generación completada!</p>;
       case "error":
