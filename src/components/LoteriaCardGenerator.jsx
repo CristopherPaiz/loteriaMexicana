@@ -367,7 +367,7 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 50,
+        zIndex: 500000,
         textAlign: "center",
       }}
     >
