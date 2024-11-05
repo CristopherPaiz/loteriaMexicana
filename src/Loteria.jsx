@@ -265,79 +265,59 @@ const Loteria = () => {
               nextImageUrl={nextImageUrl}
             />
             {isPlaying && !isPaused && (
-              <div>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "20px",
+                  width: "70px",
+                  height: "70px",
+                }}
+              >
+                <svg width="70" height="70" viewBox="0 0 70 70">
+                  <circle cx="35" cy="35" r="32" fill="rgba(0, 0, 0, 0.7)" stroke="transparent" />
+                  <circle
+                    cx="35"
+                    cy="35"
+                    r="32"
+                    fill="transparent"
+                    stroke="#00ff00"
+                    strokeWidth="4"
+                    strokeDasharray="201.06"
+                    strokeDashoffset="0"
+                    transform="rotate(-90 35 35)"
+                    style={{
+                      transition: `stroke-dashoffset ${time}s linear`,
+                      strokeDashoffset: 201.06 * (1 - countdown / time),
+                    }}
+                  />
+                  <text
+                    x="35"
+                    y="35"
+                    dominantBaseline="middle"
+                    textAnchor="middle"
+                    fill="white"
+                    fontSize="24"
+                    fontWeight="bold"
+                    style={{
+                      textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                    }}
+                  >
+                    {countdown}
+                  </text>
+                </svg>
                 <div
                   style={{
                     position: "absolute",
-                    top: "10px",
-                    right: "20px",
-                    width: "70px",
-                    height: "70px",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
                     borderRadius: "50%",
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
-                    color: "white",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.3)",
-                    overflow: "hidden",
+                    background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
+                    transition: "all 0.3s ease",
                   }}
-                >
-                  <style>
-                    {`
-          @keyframes countdown-animation {
-            0% {
-              transform: rotate(0deg);
-            }
-            100% {
-              transform: rotate(-360deg);
-            }
-          }
-        `}
-                  </style>
-                  <div
-                    key={currentCard} // Esto fuerza el reinicio de la animación
-                    style={{
-                      position: "absolute",
-                      top: "0",
-                      left: "0",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
-                      boxSizing: "border-box",
-                      border: "3px solid #00ff00",
-                      clipPath: "polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 0, 50% 0)",
-                      animation: `countdown-animation ${time}s linear`,
-                      transformOrigin: "center",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "0",
-                      left: "0",
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    <span
-                      style={{
-                        position: "relative",
-                        zIndex: 1,
-                        textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
-                      }}
-                    >
-                      {countdown}
-                    </span>
-                  </div>
-                </div>
+                />
               </div>
             )}
           </div>
