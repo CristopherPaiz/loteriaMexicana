@@ -27,11 +27,11 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
         top: 0,
         width: "300px",
         height: "100vh",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#ffffffee",
         boxShadow: "-2px 0 10px rgba(0,0,0,0.1)",
         padding: "20px",
         transform: showMenu ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.3s ease-in-out",
+        transition: "transform 0.7s ease-in-out",
         zIndex: 1000,
         overflowY: "auto",
       }}
@@ -54,14 +54,14 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           borderRadius: "50%",
           transition: "background-color 0.2s ease",
           ":hover": {
-            backgroundColor: "#f0f0f0f5",
+            backgroundColor: "#f0f0f0",
           },
         }}
       >
         ×
       </button>
 
-      <div style={{ marginTop: "30px" }}>
+      <div style={{ marginTop: "10px" }}>
         <h3
           style={{
             color: "#333",
@@ -74,7 +74,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           Escoge tipo de voz
         </h3>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "-5px" }}>
           <VoiceButton voice="hombre" activeVoice={activeVoice} onClick={handleVoiceChange} />
           <VoiceButton voice="mujer" activeVoice={activeVoice} onClick={handleVoiceChange} />
           <VoiceButton voice="nino" activeVoice={activeVoice} onClick={handleVoiceChange} />

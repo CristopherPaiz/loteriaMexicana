@@ -270,9 +270,9 @@ const Loteria = () => {
                   style={{
                     position: "absolute",
                     top: "10px",
-                    right: "10px",
-                    width: "60px",
-                    height: "60px",
+                    right: "20px",
+                    width: "70px",
+                    height: "70px",
                     borderRadius: "50%",
                     backgroundColor: "rgba(0, 0, 0, 0.7)",
                     color: "white",
@@ -322,8 +322,8 @@ const Loteria = () => {
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / (time - 1)) * 100}%, transparent ${
-                        (countdown / (time - 1)) * 100
+                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / (time + 1)) * 100}%, transparent ${
+                        (countdown / (time + 1)) * 100
                       }%)`,
                       transition: "all 0.3s ease",
                     }}
