@@ -292,7 +292,7 @@ const Loteria = () => {
               transform: rotate(0deg);
             }
             100% {
-              transform: rotate(360deg);
+              transform: rotate(-360deg);
             }
           }
         `}
@@ -306,8 +306,9 @@ const Loteria = () => {
                       width: "100%",
                       height: "100%",
                       borderRadius: "50%",
-                      border: "3px solid transparent",
-                      borderTopColor: "#00ff00",
+                      boxSizing: "border-box",
+                      border: "3px solid #00ff00",
+                      clipPath: "polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 0, 50% 0)",
                       animation: `countdown-animation ${time}s linear`,
                       transformOrigin: "center",
                     }}
@@ -322,9 +323,7 @@ const Loteria = () => {
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / (time + 1)) * 100}%, transparent ${
-                        (countdown / (time + 1)) * 100
-                      }%)`,
+                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
                       transition: "all 0.3s ease",
                     }}
                   >
