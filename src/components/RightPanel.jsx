@@ -27,7 +27,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
         top: 0,
         width: "300px",
         height: "100vh",
-        backgroundColor: "#ffffffee",
+        backgroundColor: "#3a3a3af3",
         boxShadow: "-2px 0 10px rgba(0,0,0,0.1)",
         padding: "20px",
         transform: showMenu ? "translateX(0)" : "translateX(100%)",
@@ -64,7 +64,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
       <div style={{ marginTop: "10px" }}>
         <h3
           style={{
-            color: "#333",
+            color: "#ffffff",
             fontSize: "1.2em",
             marginBottom: "15px",
             borderBottom: "2px solid #eee",
@@ -84,7 +84,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
         <p
           style={{
             fontSize: "11px",
-            color: "#666",
+            color: "#ffffff",
             margin: "15px 0",
             padding: "10px",
             backgroundColor: "#f9f9f9",
@@ -97,7 +97,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
 
         <h3
           style={{
-            color: "#333",
+            color: "#ffffff",
             fontSize: "1.2em",
             marginTop: "25px",
             marginBottom: "15px",
@@ -108,37 +108,11 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           Tiempo de cartas
         </h3>
 
-        <input
-          type="range"
-          min="2"
-          max="10"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          style={{
-            width: "100%",
-            height: "5px",
-            borderRadius: "5px",
-            appearance: "none",
-            backgroundColor: "#ddd",
-            outline: "none",
-            "::-webkit-slider-thumb": {
-              appearance: "none",
-              width: "15px",
-              height: "15px",
-              borderRadius: "50%",
-              backgroundColor: "#4CAF50",
-              cursor: "pointer",
-              transition: "transform 0.1s ease",
-            },
-            "::-webkit-slider-thumb:hover": {
-              transform: "scale(1.2)",
-            },
-          }}
-        />
+        <input type="range" min="2" max="10" value={time} onChange={(e) => setTime(e.target.value)} />
 
         <p
           style={{
-            color: "#666",
+            color: "#ffffff",
             textAlign: "center",
             margin: "10px 0",
           }}
@@ -146,7 +120,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
 
         <h3
           style={{
-            color: "#333",
+            color: "#ffffff",
             fontSize: "1.2em",
             marginTop: "25px",
             marginBottom: "15px",
@@ -173,7 +147,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
                 border: "none",
                 borderRadius: "5px",
                 backgroundColor: typeCard === type ? "#4CAF50" : "#f0f0f0",
-                color: typeCard === type ? "white" : "#333",
+                color: typeCard === type ? "white" : "#ffffff",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 transform: typeCard === type ? "scale(1.05)" : "scale(1)",

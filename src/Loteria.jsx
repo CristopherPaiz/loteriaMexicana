@@ -288,7 +288,7 @@ const Loteria = () => {
                     transform="rotate(-90 35 35)"
                     style={{
                       transition: `stroke-dashoffset ${time}s linear`,
-                      strokeDashoffset: 201.06 * (1 - countdown / time),
+                      strokeDashoffset: 201.06 * ((time - countdown) / time),
                     }}
                   />
                   <text
@@ -314,7 +314,9 @@ const Loteria = () => {
                     width: "100%",
                     height: "100%",
                     borderRadius: "50%",
-                    background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
+                    background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / (time + 1)) * 100}%, transparent ${
+                      (countdown / (time + 1)) * 100
+                    }%)`,
                     transition: "all 0.3s ease",
                   }}
                 />
