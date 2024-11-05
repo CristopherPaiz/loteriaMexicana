@@ -271,18 +271,70 @@ const Loteria = () => {
                     position: "absolute",
                     top: "10px",
                     right: "10px",
-                    width: "40px",
-                    height: "40px",
+                    width: "60px",
+                    height: "60px",
                     borderRadius: "50%",
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    backgroundColor: "rgba(0, 0, 0, 0.7)",
                     color: "white",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    fontSize: "20px",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.3)",
+                    overflow: "hidden",
                   }}
                 >
-                  {countdown}
+                  <style>
+                    {`
+          @keyframes countdown-animation {
+            0% {
+              transform: rotate(0deg);
+            }
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+        `}
+                  </style>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "0",
+                      left: "0",
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      border: "3px solid transparent",
+                      borderTopColor: "#00ff00",
+                      animation: `countdown-animation ${time}s linear 1`,
+                      transformOrigin: "center",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "0",
+                      left: "0",
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: "relative",
+                        zIndex: 1,
+                        textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+                      }}
+                    >
+                      {countdown}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
