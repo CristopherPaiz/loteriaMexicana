@@ -63,6 +63,13 @@ const Loteria = () => {
         }
       }, (time - PRELOAD_TIME) * 1000);
 
+      // Programar el sonido de cambio de carta cuando se reanuda el juego
+      if (time >= 4) {
+        changeSoundTimerRef.current = setTimeout(() => {
+          playSound("0. cambio carta");
+        }, time * 1000 - 500);
+      }
+
       return () => {
         clearTimeout(timerRef.current);
         clearTimeout(preloadTimer);
@@ -121,26 +128,24 @@ const Loteria = () => {
   const changeSoundTimerRef = useRef(null); // Nueva referencia para el temporizador del sonido
 
   const drawNextCard = () => {
-    clearTimeout(timerRef.current); // Limpiar cualquier temporizador pendiente
-    clearTimeout(changeSoundTimerRef.current); // Limpiar temporizador de cambio de carta pendiente
+    clearTimeout(timerRef.current);
+    clearTimeout(changeSoundTimerRef.current);
 
     if (deck.length > 0) {
       const newCard = deck.pop();
 
-      // Detener cualquier sonido en curso antes de encolar el nuevo sonido de "cambio carta"
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.currentTime = 0; // Reiniciar el audio actual
+        audioRef.current.currentTime = 0;
       }
 
-      if (time >= 4) {
-        // Reproducir el sonido de "cambio carta" 500ms antes del cambio
+      // Solo programar el sonido de cambio de carta si el juego no está pausado
+      if (time >= 4 && !isPaused) {
         changeSoundTimerRef.current = setTimeout(() => {
           playSound("0. cambio carta");
-        }, time * 1000 - 500); // Reproduce 500ms antes del tiempo de la carta
+        }, time * 1000 - 500);
       }
 
-      // Luego reproducir el sonido de la carta
       playCardSound(newCard);
 
       setCurrentCard(newCard);
