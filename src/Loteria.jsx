@@ -298,6 +298,7 @@ const Loteria = () => {
         `}
                   </style>
                   <div
+                    key={currentCard} // Esto fuerza el reinicio de la animación
                     style={{
                       position: "absolute",
                       top: "0",
@@ -307,7 +308,7 @@ const Loteria = () => {
                       borderRadius: "50%",
                       border: "3px solid transparent",
                       borderTopColor: "#00ff00",
-                      animation: `countdown-animation ${time}s linear 1`,
+                      animation: `countdown-animation ${countdown}s linear`,
                       transformOrigin: "center",
                     }}
                   />
