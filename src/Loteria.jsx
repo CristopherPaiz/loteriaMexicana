@@ -308,7 +308,7 @@ const Loteria = () => {
                       borderRadius: "50%",
                       border: "3px solid transparent",
                       borderTopColor: "#00ff00",
-                      animation: `countdown-animation ${countdown}s linear`,
+                      animation: `countdown-animation ${time}s linear`,
                       transformOrigin: "center",
                     }}
                   />
@@ -322,7 +322,9 @@ const Loteria = () => {
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
+                      background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / (time - 1)) * 100}%, transparent ${
+                        (countdown / (time - 1)) * 100
+                      }%)`,
                       transition: "all 0.3s ease",
                     }}
                   >
