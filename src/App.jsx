@@ -90,7 +90,7 @@ const styles = `
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
-    background-color: #258b29;
+    background-color: #187a1b;
     color: white;
     border: none;
     cursor: pointer;
@@ -102,7 +102,7 @@ const styles = `
   }
 
   .voice-button.active {
-    background-color: #003a03;
+    background-color: #4eca52;
   }
 
   button {
