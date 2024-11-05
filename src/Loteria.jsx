@@ -287,7 +287,7 @@ const Loteria = () => {
                     strokeDashoffset="0"
                     transform="rotate(-90 35 35)"
                     style={{
-                      transition: `stroke-dashoffset ${time}s linear`,
+                      transition: `stroke-dashoffset ${countdown}s linear`,
                       strokeDashoffset: 201.06 * ((time - countdown) / time),
                     }}
                   />

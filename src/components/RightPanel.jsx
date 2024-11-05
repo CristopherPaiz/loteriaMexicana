@@ -74,7 +74,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           Escoge tipo de voz
         </h3>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "-5px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "-10px" }}>
           <VoiceButton voice="hombre" activeVoice={activeVoice} onClick={handleVoiceChange} />
           <VoiceButton voice="mujer" activeVoice={activeVoice} onClick={handleVoiceChange} />
           <VoiceButton voice="nino" activeVoice={activeVoice} onClick={handleVoiceChange} />
@@ -87,7 +87,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
             color: "#ffffff",
             margin: "15px 0",
             padding: "10px",
-            backgroundColor: "#f9f9f9",
+            backgroundColor: "#5f5f5f",
             borderRadius: "5px",
             lineHeight: "1.4",
           }}
@@ -108,7 +108,17 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           Tiempo de cartas
         </h3>
 
-        <input type="range" min="2" max="10" value={time} onChange={(e) => setTime(e.target.value)} />
+        <input
+          type="range"
+          min="2"
+          max="10"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          style={{
+            width: "100%",
+            cursor: "pointer",
+          }}
+        />
 
         <p
           style={{
@@ -146,8 +156,8 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
                 padding: "10px 20px",
                 border: "none",
                 borderRadius: "5px",
-                backgroundColor: typeCard === type ? "#4CAF50" : "#f0f0f0",
-                color: typeCard === type ? "white" : "#ffffff",
+                backgroundColor: typeCard === type ? "#4CAF50" : "#989898",
+                color: typeCard === type ? "white" : "#000000",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 transform: typeCard === type ? "scale(1.05)" : "scale(1)",
