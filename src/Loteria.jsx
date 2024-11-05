@@ -5,7 +5,7 @@ import RightPanel from "./components/RightPanel";
 import MenuButton from "./components/MenuButton";
 import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 
-const TIME_BETWEEN_CARDS = 4;
+const TIME_BETWEEN_CARDS = 5;
 const INITIAL_CARD_STYLE = "HD"; // HD or SD
 const CARD_LENGTH = 54;
 const CARD_SHOW_TOP_MOBILE = 5;
@@ -66,9 +66,11 @@ const Loteria = () => {
       return () => {
         clearTimeout(timerRef.current);
         clearTimeout(preloadTimer);
+        clearTimeout(changeSoundTimerRef.current);
       };
     } else {
       clearTimeout(timerRef.current);
+      clearTimeout(changeSoundTimerRef.current);
     }
   }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
 
@@ -183,6 +185,7 @@ const Loteria = () => {
 
   const togglePlay = () => {
     setIsPaused(!isPaused);
+    clearTimeout(changeSoundTimerRef.current);
     playSound(isPaused ? "0. play" : "0. pause");
   };
 
