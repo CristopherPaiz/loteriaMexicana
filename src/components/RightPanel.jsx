@@ -27,7 +27,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
         top: 0,
         width: "300px",
         height: "100vh",
-        backgroundColor: "#3a3a3af3",
+        backgroundColor: "#464646fb",
         boxShadow: "-2px 0 10px rgba(0,0,0,0.1)",
         padding: "20px",
         transform: showMenu ? "translateX(0)" : "translateX(100%)",
