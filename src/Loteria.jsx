@@ -288,7 +288,8 @@ const Loteria = () => {
                       transformOrigin: "center",
                       transform: "rotate(-90deg)",
                       strokeDasharray: `${2 * Math.PI * 32}`,
-                      strokeDashoffset: countdown === time ? 0 : countdown === 0 ? `${2 * Math.PI * 32}` : `${2 * Math.PI * 32 * (1 - countdown / time)}`,
+                      strokeDashoffset:
+                        countdown === time ? 0 : countdown === 0 ? `${2 * Math.PI * 32}` : `${2 * Math.PI * 32 * (1 - (countdown - 1) / time)}`,
                       transition: countdown === time || countdown === 0 ? "none" : "stroke-dashoffset 1s linear",
                     }}
                   />
