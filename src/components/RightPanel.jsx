@@ -110,7 +110,7 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
 
         <input
           type="range"
-          min="2"
+          min="3"
           max="10"
           value={time}
           onChange={(e) => setTime(e.target.value)}
