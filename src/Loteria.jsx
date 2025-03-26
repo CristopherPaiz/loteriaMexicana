@@ -4,9 +4,11 @@ import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
 import MenuButton from "./components/MenuButton";
 import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
+import CountdownTimer from "./components/CountdownTimer";
+import "./Loteria.css";
 
 const TIME_BETWEEN_CARDS = 5;
-const INITIAL_CARD_STYLE = "HD"; // HD or SD
+const INITIAL_CARD_STYLE = "HD"; // HD o SD
 const CARD_LENGTH = 54;
 const CARD_SHOW_TOP_MOBILE = 5;
 const CARD_SHOW_TOP_DESKTOP = 10;
@@ -25,6 +27,9 @@ const Loteria = () => {
   const [isPaused, setIsPaused] = useState(false);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+  const changeSoundTimerRef = useRef(null);
+  const soundQueueRef = useRef([]);  // Cola para sonidos
+  const isPlayingAudioRef = useRef(false); // Estado para saber si hay un audio en reproducción
   const [time, setTime] = useState(TIME_BETWEEN_CARDS);
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -47,15 +52,77 @@ const Loteria = () => {
     return deckToShuffle;
   };
 
+  // Función para reproducir la cola de sonidos
+  const playSoundQueue = () => {
+    if (soundQueueRef.current.length === 0 || isPlayingAudioRef.current) {
+      return;
+    }
+
+    isPlayingAudioRef.current = true;
+    const nextSound = soundQueueRef.current.shift();
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = nextSound.src;
+      
+      audioRef.current.onended = () => {
+        isPlayingAudioRef.current = false;
+        if (nextSound.callback) {
+          nextSound.callback();
+        }
+        // Reproducir el siguiente sonido en la cola
+        playSoundQueue();
+      };
+      
+      audioRef.current.play().catch(err => {
+        console.error("Error al reproducir audio:", err);
+        isPlayingAudioRef.current = false;
+        playSoundQueue(); // Intentar con el siguiente sonido
+      });
+    }
+  };
+
+  // Función para agregar sonidos a la cola
+  const queueSound = (soundPath, callback) => {
+    soundQueueRef.current.push({ src: soundPath, callback });
+    
+    // Si no hay sonido reproduciéndose, iniciar la cola
+    if (!isPlayingAudioRef.current) {
+      playSoundQueue();
+    }
+  };
+
+  // Función para limpiar la cola de sonidos
+  const clearSoundQueue = () => {
+    soundQueueRef.current = [];
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    isPlayingAudioRef.current = false;
+  };
+
   useEffect(() => {
     const shuffledDeck = shuffleDeck(initializeDeck());
     setDeck(shuffledDeck);
+    
+    // Limpiar todo al desmontar el componente
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(changeSoundTimerRef.current);
+      clearSoundQueue();
+    };
   }, []);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
-      timerRef.current = setTimeout(drawNextCard, time * 1000);
+      // Programar el próximo cambio de carta
+      timerRef.current = setTimeout(() => {
+        drawNextCard();
+      }, time * 1000);
 
+      // Programar la precarga de la siguiente imagen
       const preloadTimer = setTimeout(() => {
         if (deck.length > 0) {
           const nextCardNumber = deck[deck.length - 1];
@@ -63,21 +130,12 @@ const Loteria = () => {
         }
       }, (time - PRELOAD_TIME) * 1000);
 
-      // Programar el sonido de cambio de carta cuando se reanuda el juego
-      if (time >= 4) {
-        changeSoundTimerRef.current = setTimeout(() => {
-          playSound("0. cambio carta");
-        }, time * 1000 - 500);
-      }
-
       return () => {
         clearTimeout(timerRef.current);
         clearTimeout(preloadTimer);
-        clearTimeout(changeSoundTimerRef.current);
       };
     } else {
       clearTimeout(timerRef.current);
-      clearTimeout(changeSoundTimerRef.current);
     }
   }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
 
@@ -91,12 +149,6 @@ const Loteria = () => {
     return () => clearInterval(intervalId);
   }, [isPlaying, isPaused, countdown]);
 
-  useEffect(() => {
-    if (countdown === 0 && isPlaying && !isPaused) {
-      drawNextCard();
-    }
-  }, [countdown, isPlaying, isPaused]);
-
   const preloadImage = (cardNumber) => {
     const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
     const img = new Image();
@@ -109,6 +161,11 @@ const Loteria = () => {
   };
 
   const startGame = () => {
+    // Limpiar temporizadores y cola de sonidos
+    clearTimeout(timerRef.current);
+    clearTimeout(changeSoundTimerRef.current);
+    clearSoundQueue();
+    
     const shuffledDeck = shuffleDeck(initializeDeck());
     setDeck(shuffledDeck);
     setIsPlaying(true);
@@ -116,45 +173,37 @@ const Loteria = () => {
     setPastCards([]);
     setPastCardsAll([]);
     setGameOver(false);
-    playSound("0. barajar");
+    setCountdown(time);
 
-    if (!isReset && time >= 4) {
-      setTimeout(() => {
-        playSoundStart();
-      }, 2000);
-    }
+    // Reproducir el sonido de barajar y luego el de apertura
+    queueSound("/sounds/sounds/0. barajar.mp3", () => {
+      if (!isReset && time >= 4) {
+        queueSound(`/sounds/mujer/1. mujer apertura.mp3`);
+      }
+    });
   };
 
-  const changeSoundTimerRef = useRef(null); // Nueva referencia para el temporizador del sonido
-
   const drawNextCard = () => {
+    // Cancelar cualquier temporizador pendiente
     clearTimeout(timerRef.current);
-    clearTimeout(changeSoundTimerRef.current);
-
+    
     if (deck.length > 0) {
       const newCard = deck.pop();
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-
-      // Solo programar el sonido de cambio de carta si el juego no está pausado
-      if (time >= 4 && !isPaused) {
-        changeSoundTimerRef.current = setTimeout(() => {
-          playSound("0. cambio carta");
-        }, time * 1000 - 500);
-      }
-
-      playCardSound(newCard);
-
-      setCurrentCard(newCard);
-      setDeck([...deck]);
-      setIsImageLoaded(false);
-      setDisplayedCard(newCard);
-      setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
-      setPastCardsAll((prev) => [newCard, ...prev]);
-      setCountdown(time);
+      
+      // Primero reproducir el sonido de cambio de carta
+      queueSound("/sounds/sounds/0. cambio carta.mp3", () => {
+        // Cuando termine el sonido de cambio, actualizar la carta y reproducir su sonido
+        setCurrentCard(newCard);
+        setDeck([...deck]);
+        setIsImageLoaded(false);
+        setDisplayedCard(newCard);
+        setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
+        setPastCardsAll((prev) => [newCard, ...prev]);
+        setCountdown(time);
+        
+        // Reproducir el sonido de la carta
+        queueSound(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
+      });
     } else {
       setIsPlaying(false);
       setGameOver(true);
@@ -162,50 +211,16 @@ const Loteria = () => {
   };
 
   const playSound = (soundName) => {
-    if (audioRef.current) {
-      audioRef.current.pause(); // Detener el sonido actual
-      audioRef.current.src = `/sounds/sounds/${soundName}.mp3`;
-      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
-      audioRef.current.play();
-    }
-  };
-
-  const playSoundStart = () => {
-    if (audioRef.current) {
-      audioRef.current.pause(); // Detener el sonido actual
-      audioRef.current.src = `/sounds/mujer/1. mujer apertura.mp3`;
-      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
-      audioRef.current.play();
-    }
-  };
-
-  const playCardSound = (cardNumber) => {
-    if (audioRef.current) {
-      audioRef.current.pause(); // Detener el sonido actual
-      audioRef.current.src = `/sounds/${activeVoice}/${cardNumber}. ${activeVoice}.mp3`;
-      audioRef.current.load(); // Asegurar que el nuevo sonido esté listo para reproducir
-      audioRef.current.play();
-    }
+    queueSound(`/sounds/sounds/${soundName}.mp3`);
   };
 
   const togglePlay = () => {
     setIsPaused(!isPaused);
-    clearTimeout(changeSoundTimerRef.current);
     playSound(isPaused ? "0. play" : "0. pause");
   };
 
   const handleVoiceChange = (voice) => {
-    if (audioRef.current) {
-      const currentTime = audioRef.current.currentTime;
-      setActiveVoice(voice);
-      audioRef.current.src = `/sounds/${voice}/${currentCard}. ${voice}.mp3`;
-      audioRef.current.currentTime = currentTime;
-      if (!audioRef.current.paused) {
-        audioRef.current.play();
-      }
-    } else {
-      setActiveVoice(voice);
-    }
+    setActiveVoice(voice);
   };
 
   const stopGame = () => {
@@ -213,6 +228,8 @@ const Loteria = () => {
       setIsPlaying(false);
       setIsPaused(false);
       clearTimeout(timerRef.current);
+      clearTimeout(changeSoundTimerRef.current);
+      clearSoundQueue();
       setDeck(shuffleDeck(initializeDeck()));
       setPastCards([]);
       setPastCardsAll([]);
@@ -220,19 +237,27 @@ const Loteria = () => {
       setIsImageLoaded(false);
       setNextImageUrl("");
       setGameOver(false);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
     }
   };
 
   return (
-    <div className="loteria-container relative">
+    <div className="loteria-container loteria-modern">
+      {/* Fondo dinámico separado para evitar conflictos de layout */}
+      <div className="loteria-bg-wrapper">
+        <div 
+          className="loteria-dynamic-bg" 
+          style={{
+            backgroundImage: displayedCard ? 
+              `url(/${typeCard}WEBP/${displayedCard}.webp)` : 
+              'linear-gradient(135deg, #1d3557 0%, #2a4a73 100%)'
+          }}
+        />
+      </div>
+      
       <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
       {isMobile && <h1 className="title">Lotería Mexicana</h1>}
       {pastCardsAll.length > 0 && (
-        <div style={{ textAlign: "center", fontSize: 15, position: "absolute", left: "0", top: "10px", right: "0" }}>
+        <div style={{ textAlign: "center", fontSize: 15, position: "absolute", left: "0", top: "10px", right: "0", zIndex: 10 }}>
           {pastCardsAll.length} / 54 (quedan {deck.length} cartas)
         </div>
       )}
@@ -264,66 +289,14 @@ const Loteria = () => {
               isImageLoaded={isImageLoaded}
               nextImageUrl={nextImageUrl}
             />
+            
+            {/* Contador como componente independiente */}
             {isPlaying && !isPaused && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "20px",
-                  width: "70px",
-                  height: "70px",
-                }}
-              >
-                <svg width="70" height="70" viewBox="0 0 70 70">
-                  <circle cx="35" cy="35" r="32" fill="rgba(0, 0, 0, 0.7)" stroke="transparent" />
-                  <circle
-                    cx="35"
-                    cy="35"
-                    r="32"
-                    fill="transparent"
-                    stroke="#00ff00"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    style={{
-                      transformOrigin: "center",
-                      transform: "rotate(-90deg)",
-                      strokeDasharray: `${2 * Math.PI * 32}`,
-                      strokeDashoffset:
-                        countdown === time ? 0 : countdown === 0 ? `${2 * Math.PI * 32}` : `${2 * Math.PI * 32 * (1 - (countdown - 1) / time)}`,
-                      transition: countdown === time || countdown === 0 ? "none" : "stroke-dashoffset 1s linear",
-                    }}
-                  />
-                  <text
-                    x="35"
-                    y="35"
-                    dominantBaseline="middle"
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="24"
-                    fontWeight="bold"
-                    style={{
-                      textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
-                    }}
-                  >
-                    {countdown}
-                  </text>
-                </svg>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    background: `radial-gradient(circle, rgba(0,255,0,0.2) ${(countdown / time) * 100}%, transparent ${(countdown / time) * 100}%)`,
-                    transition: "all 0.3s ease",
-                  }}
-                />
-              </div>
+              <CountdownTimer countdown={countdown} totalTime={time} />
             )}
           </div>
-          <p>* Toca la imagen para pausar el juego</p>
+          <p></p>
+          <p></p>
 
           <RightPanel
             showMenu={showMenu}
@@ -340,11 +313,26 @@ const Loteria = () => {
       )}
       <audio ref={audioRef} />
       <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-        <button style={{ padding: "0.7rem 1.5rem", backgroundColor: "" }} onClick={() => setIsModalOpen(true)}>
+        <button 
+          style={{ 
+            padding: "0.7rem 1.5rem", 
+            backgroundColor: "#a33",
+            color: "white",
+            border: "none",
+            borderRadius: "30px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+            transition: "all 0.3s"
+          }} 
+          onClick={() => setIsModalOpen(true)}
+        >
           Generador de Cartones
         </button>
       </div>
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <p></p>
+      <p></p>
     </div>
   );
 };

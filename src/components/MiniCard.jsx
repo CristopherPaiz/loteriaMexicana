@@ -6,19 +6,21 @@ const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
 
   useEffect(() => {
     if (isDisplayed) {
-      setTimeout(() => setIsVisible(true), 400);
+      // Retraso escalonado para crear efecto en cascada
+      setTimeout(() => setIsVisible(true), 100 + index * 50);
     }
-  }, [isDisplayed]);
+  }, [isDisplayed, index]);
 
   return (
     <div
       className="mini-card"
       style={{
         zIndex: totalCards - index,
-        left: `${index}px`,
+        left: `${index * 2}px`,
         position: "relative",
         opacity: isVisible ? 1 : 0,
-        transition: "opacity 0.4s ease-in-out",
+        transform: isVisible ? "translateY(0)" : "translateY(20px)",
+        transition: "opacity 0.4s ease-in-out, transform 0.5s ease-out",
       }}
     >
       <img src={`/${typeCard}WEBP/${number}.webp`} alt={`Carta ${number}`} />

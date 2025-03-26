@@ -1,47 +1,43 @@
 import PropTypes from "prop-types";
-
 const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, nextImageUrl }) => {
-  const currentImageUrl = `/${typeCard}WEBP/${number}.webp`;
 
+  
+  
+  // URL de la imagen actual
+  const currentImageUrl = `/${typeCard}WEBP/${number}.webp`;
+  
+  // Determinar las clases de juego/pausa
+  const cardStateClass = isPaused && isPlaying ? "paused" : "playing";
+  
   return (
-    <div className={`card ${isPaused && isPlaying ? "paused" : "playing"}`} onClick={onClick} style={{ position: "relative" }}>
-      <img
-        src={currentImageUrl}
-        alt={`Carta ${number}`}
-        style={{
-          opacity: isPlaying ? (isPaused ? 0.5 : 1) : 1,
-          transition: "opacity 0.3s all",
-        }}
-      />
-      {isPlaying && (
-        <>
-          {isImageLoaded ? (
-            <img
-              src={nextImageUrl}
-              alt="Next card"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                opacity: 0,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "gray",
-                opacity: 0,
-              }}
-            />
-          )}
-        </>
+    <div className="loteria-card-container" onClick={onClick}>
+      {/* Carta actual */}
+      <div className={`loteria-card loteria-card-current ${cardStateClass}`}>
+        <img
+          src={currentImageUrl}
+          alt={`Carta ${number}`}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            opacity: isPlaying ? (isPaused ? 0.5 : 1) : 1,
+          }}
+        />
+      </div>
+      
+      {/* Imagen precargada (invisible) */}
+      {isPlaying && isImageLoaded && (
+        <img
+          src={nextImageUrl}
+          alt="Next card"
+          style={{
+            position: "absolute",
+            width: 0,
+            height: 0,
+            opacity: 0,
+            visibility: "hidden"
+          }}
+        />
       )}
     </div>
   );
