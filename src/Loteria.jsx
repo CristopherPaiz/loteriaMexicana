@@ -249,7 +249,7 @@ const Loteria = () => {
           style={{
             backgroundImage: displayedCard ? 
               `url(/${typeCard}WEBP/${displayedCard}.webp)` : 
-              'linear-gradient(135deg, #1d3557 0%, #2a4a73 100%)'
+              'linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);'
           }}
         />
       </div>
