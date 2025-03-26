@@ -80,8 +80,8 @@ const styles = `
   */
 
   .mini-card {
-    width: 50px;
-    height: 75px;
+    width: 40px;
+    height: 65px;
     margin: 0 -10px;
     border: 10px solid white;
     border-radius: 10px;
