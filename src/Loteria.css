@@ -52,7 +52,7 @@
   height: 120%;
   background-size: cover;
   background-position: center;
-  filter: blur(15px) brightness(0.2);
+  filter: blur(15px) brightness(0.4);
   transform: scale(1.1);
   transition: background-image 1s ease;
 }
@@ -82,9 +82,9 @@
 /* Estilo del contenedor de carta */
 .loteria-card-container {
   position: relative;
-  width: 200px;
-  height: 320px;
-  margin-bottom: 20px;
+  width: 180px;
+  height: 290px;
+  margin-bottom: 10px;
   overflow: visible;
   z-index: 5;
   margin-left: -35px;
