@@ -166,7 +166,7 @@ const styles = `
     position: relative;
     z-index: 5;
     color: white;
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 
   @keyframes pulse {
