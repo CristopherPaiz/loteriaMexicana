@@ -22,7 +22,7 @@ const Loteria = () => {
   const [pastCards, setPastCards] = useState([]);
   const [pastCardsAll, setPastCardsAll] = useState([]);
   const voice = ["hombre", "mujer", "nino", "joven"];
-  const [activeVoice, setActiveVoice] = useState(voice[Math.floor(Math.random() * voice.length)]);
+  const [activeVoice, setActiveVoice] = useState(voice[1]);
   const [showMenu, setShowMenu] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const audioRef = useRef(null);
