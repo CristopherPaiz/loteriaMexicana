@@ -345,6 +345,8 @@ const Loteria = () => {
     setPastCardsAll([]);
     setGameOver(false);
     setCountdown(time);
+    setCurrentCard(1); // Reset visual to first card
+    setDisplayedCard(null); // Reset background to gradient
 
     // Secuencia de inicio: Barajar -> Mujer Apertura -> Iniciar juego
     playAudioImmediate("/sounds/sounds/0. barajar.mp3", () => {
