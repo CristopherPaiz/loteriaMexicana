@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed, imageUrl }) => {
-  const [isVisible, setIsVisible] = useState(false);
+const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed, imageUrl, animate = true }) => {
+  const [isVisible, setIsVisible] = useState(!animate);
 
   useEffect(() => {
-    if (isDisplayed) {
+    if (animate && isDisplayed) {
       // Retraso escalonado para crear efecto en cascada
-      setTimeout(() => setIsVisible(true), 100 + index * 50);
+      const timer = setTimeout(() => setIsVisible(true), 100 + index * 50);
+      return () => clearTimeout(timer);
+    } else if (!animate) {
+      setIsVisible(true);
     }
-  }, [isDisplayed, index]);
+  }, [isDisplayed, index, animate]);
 
   const currentImageUrl = imageUrl || `/${typeCard}WEBP/${number}.webp`;
 
@@ -37,6 +40,7 @@ MiniCard.propTypes = {
   typeCard: PropTypes.string.isRequired,
   isDisplayed: PropTypes.bool.isRequired,
   imageUrl: PropTypes.string,
+  animate: PropTypes.bool,
 };
 
 export default MiniCard;

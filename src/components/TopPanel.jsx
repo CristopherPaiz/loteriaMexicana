@@ -41,6 +41,7 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll, getCardIma
             typeCard={typeCard}
             isDisplayed={card === displayedCard}
             imageUrl={getCardImageUrl(card)}
+            animate={card === displayedCard}
           />
         ))}
       </div>

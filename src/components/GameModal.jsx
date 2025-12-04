@@ -38,47 +38,52 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
 
         .game-modal-content {
           background: linear-gradient(145deg, #2b2f3a, #1a1d24);
-          padding: 25px;
-          border-radius: 15px;
+          padding: 30px;
+          border-radius: 20px;
           width: 90%;
-          max-width: 400px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+          max-width: 450px;
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
           color: white;
           text-align: center;
           border: 1px solid rgba(255, 255, 255, 0.1);
           animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          margin: 20px;
         }
 
         .game-modal-title {
           margin-top: 0;
-          margin-bottom: 15px;
-          font-size: 1.5rem;
+          margin-bottom: 20px;
+          font-size: 1.8rem;
           color: #fff;
+          font-weight: 700;
         }
 
         .game-modal-body {
-          margin-bottom: 25px;
-          font-size: 1rem;
+          margin-bottom: 30px;
+          font-size: 1.1rem;
           color: #ccc;
-          line-height: 1.5;
+          line-height: 1.6;
         }
 
         .game-modal-actions {
           display: flex;
           justify-content: center;
-          gap: 15px;
+          gap: 20px;
+          flex-wrap: wrap;
         }
 
         .game-modal-button {
-          padding: 10px 20px;
+          padding: 12px 24px;
           border: none;
-          border-radius: 25px;
+          border-radius: 30px;
           font-weight: bold;
           cursor: pointer;
           transition: transform 0.2s, box-shadow 0.2s;
           display: flex;
           align-items: center;
-          font-size: 0.9rem;
+          font-size: 1rem;
+          min-width: 120px;
+          justify-content: center;
         }
 
         .game-modal-button:hover {

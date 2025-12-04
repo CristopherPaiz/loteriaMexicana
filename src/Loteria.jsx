@@ -339,7 +339,21 @@ const Loteria = () => {
     setActiveVoice(voice);
   };
 
+  // Alerta de recarga de página
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isPlaying && !gameOver) {
+        e.preventDefault();
+        e.returnValue = ""; // Necesario para Chrome
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isPlaying, gameOver]);
+
   const requestStopGame = () => {
+    setIsPaused(true); // Pausar el juego mientras se decide
     setShowStopConfirm(true);
   };
 
