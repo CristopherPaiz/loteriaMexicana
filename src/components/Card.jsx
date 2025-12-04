@@ -1,14 +1,12 @@
 import PropTypes from "prop-types";
-const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, nextImageUrl }) => {
 
-  
-  
+const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, nextImageUrl, imageUrl }) => {
   // URL de la imagen actual
-  const currentImageUrl = `/${typeCard}WEBP/${number}.webp`;
-  
+  const currentImageUrl = imageUrl || `/${typeCard}WEBP/${number}.webp`;
+
   // Determinar las clases de juego/pausa
   const cardStateClass = isPaused && isPlaying ? "paused" : "playing";
-  
+
   return (
     <div className="loteria-card-container" onClick={onClick}>
       {/* Carta actual */}
@@ -24,7 +22,7 @@ const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, n
           }}
         />
       </div>
-      
+
       {/* Imagen precargada (invisible) */}
       {isPlaying && isImageLoaded && (
         <img
@@ -35,7 +33,7 @@ const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, n
             width: 0,
             height: 0,
             opacity: 0,
-            visibility: "hidden"
+            visibility: "hidden",
           }}
         />
       )}
@@ -53,4 +51,5 @@ Card.propTypes = {
   isPlaying: PropTypes.bool.isRequired,
   isImageLoaded: PropTypes.bool.isRequired,
   nextImageUrl: PropTypes.string.isRequired,
+  imageUrl: PropTypes.string,
 };

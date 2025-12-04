@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
-const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
+const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed, imageUrl }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -10,6 +10,8 @@ const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
       setTimeout(() => setIsVisible(true), 100 + index * 50);
     }
   }, [isDisplayed, index]);
+
+  const currentImageUrl = imageUrl || `/${typeCard}WEBP/${number}.webp`;
 
   return (
     <div
@@ -23,7 +25,7 @@ const MiniCard = ({ number, index, totalCards, typeCard, isDisplayed }) => {
         transition: "opacity 0.4s ease-in-out, transform 0.5s ease-out",
       }}
     >
-      <img src={`/${typeCard}WEBP/${number}.webp`} alt={`Carta ${number}`} />
+      <img src={currentImageUrl} alt={`Carta ${number}`} />
     </div>
   );
 };
@@ -34,6 +36,7 @@ MiniCard.propTypes = {
   totalCards: PropTypes.number.isRequired,
   typeCard: PropTypes.string.isRequired,
   isDisplayed: PropTypes.bool.isRequired,
+  imageUrl: PropTypes.string,
 };
 
 export default MiniCard;

@@ -12,23 +12,20 @@ const LoadingScreen = ({ onComplete, assets }) => {
 
     let isMounted = true;
     let loaded = 0;
+    const cache = {};
     const total = assets.length;
 
     const loadAsset = async (src) => {
-      return new Promise((resolve) => {
-        if (src.endsWith(".mp3") || src.endsWith(".wav")) {
-          const audio = new Audio();
-          audio.oncanplaythrough = () => resolve(src);
-          audio.onerror = () => resolve(src); // Resolve anyway to not block
-          audio.src = src;
-          audio.load();
-        } else {
-          const img = new Image();
-          img.onload = () => resolve(src);
-          img.onerror = () => resolve(src);
-          img.src = src;
-        }
-      });
+      try {
+        const response = await fetch(src);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        cache[src] = blobUrl;
+        return src;
+      } catch (error) {
+        console.error(`Failed to load asset: ${src}`, error);
+        return src; // Resolve anyway to continue
+      }
     };
 
     const loadAll = async () => {
@@ -50,7 +47,7 @@ const LoadingScreen = ({ onComplete, assets }) => {
       }
       if (isMounted) {
         // Small delay to show 100%
-        setTimeout(onComplete, 800);
+        setTimeout(() => onComplete(cache), 800);
       }
     };
 

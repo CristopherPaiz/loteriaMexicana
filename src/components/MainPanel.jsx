@@ -2,17 +2,18 @@ import PropTypes from "prop-types";
 import Card from "./Card";
 import { FaPlay, FaForward, FaUndo } from "react-icons/fa";
 
-const MainPanel = ({ 
-  currentCard, 
-  togglePlay, 
-  startGame, 
-  drawNextCard, 
-  stopGame, 
-  isPlaying, 
-  isPaused, 
-  typeCard, 
-  isImageLoaded, 
-  nextImageUrl 
+const MainPanel = ({
+  currentCard,
+  togglePlay,
+  startGame,
+  drawNextCard,
+  stopGame,
+  isPlaying,
+  isPaused,
+  typeCard,
+  isImageLoaded,
+  nextImageUrl,
+  currentImageUrl,
 }) => (
   <div className="main-panel">
     {/* Contenedor con posición relativa para el Card */}
@@ -25,30 +26,35 @@ const MainPanel = ({
         isPlaying={isPlaying}
         isImageLoaded={isImageLoaded}
         nextImageUrl={nextImageUrl}
+        imageUrl={currentImageUrl}
       />
     </div>
-    
-    <p style={{ 
-      textAlign: "center", 
-      margin: "10px 0", 
-      fontSize: "14px",
-      opacity: 0.8,
-      color: "white" 
-    }}>
+
+    <p
+      style={{
+        textAlign: "center",
+        margin: "10px 0",
+        fontSize: "14px",
+        opacity: 0.8,
+        color: "white",
+      }}
+    >
       * Toca la carta para {isPlaying ? (isPaused ? "reanudar" : "pausar") : "comenzar"}
     </p>
-    
-    <div style={{
-      width: "100%",
-      maxWidth: "300px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-      marginTop: "10px"
-    }}>
+
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "300px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        marginTop: "10px",
+      }}
+    >
       {isPlaying ? (
         <>
-          <button 
+          <button
             style={{
               backgroundColor: "#2196F3",
               color: "white",
@@ -62,15 +68,15 @@ const MainPanel = ({
               cursor: isPaused ? "not-allowed" : "pointer",
               opacity: isPaused ? 0.7 : 1,
               boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              transition: "all 0.3s"
+              transition: "all 0.3s",
             }}
             onClick={drawNextCard}
             disabled={isPaused}
           >
             <FaForward style={{ marginRight: "8px" }} /> Siguiente carta
           </button>
-          
-          <button 
+
+          <button
             style={{
               backgroundColor: "#F44336",
               color: "white",
@@ -83,7 +89,7 @@ const MainPanel = ({
               justifyContent: "center",
               cursor: "pointer",
               boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              transition: "all 0.3s"
+              transition: "all 0.3s",
             }}
             onClick={stopGame}
           >
@@ -91,7 +97,7 @@ const MainPanel = ({
           </button>
         </>
       ) : (
-        <button 
+        <button
           style={{
             backgroundColor: "#4CAF50",
             color: "white",
@@ -105,7 +111,7 @@ const MainPanel = ({
             cursor: "pointer",
             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
             transition: "all 0.3s",
-            animation: "pulse 1.5s infinite"
+            animation: "pulse 1.5s infinite",
           }}
           onClick={startGame}
         >
@@ -129,4 +135,5 @@ MainPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   isImageLoaded: PropTypes.bool.isRequired,
   nextImageUrl: PropTypes.string.isRequired,
+  currentImageUrl: PropTypes.string.isRequired,
 };

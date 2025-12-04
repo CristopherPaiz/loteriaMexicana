@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import MiniCard from "./MiniCard";
 import PropTypes from "prop-types";
 
-const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
+const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll, getCardImageUrl }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = () => pastCardsAll.length > 0 && setIsModalOpen(true);
@@ -33,7 +33,15 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
     <>
       <div className="top-panel" style={{ position: "relative", height: "100px", cursor: "pointer" }} onClick={openModal}>
         {pastCards.map((card, index) => (
-          <MiniCard key={card} number={card} index={index} totalCards={pastCards.length} typeCard={typeCard} isDisplayed={card === displayedCard} />
+          <MiniCard
+            key={card}
+            number={card}
+            index={index}
+            totalCards={pastCards.length}
+            typeCard={typeCard}
+            isDisplayed={card === displayedCard}
+            imageUrl={getCardImageUrl(card)}
+          />
         ))}
       </div>
       {isModalOpen && (
@@ -108,7 +116,7 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
             >
               {[...pastCardsAll].reverse().map((card, index) => (
                 <div key={card} style={{ position: "relative" }}>
-                  <img src={`/${typeCard}WEBP/${card}.webp`} alt={`Carta ${card}`} style={{ width: "100%", height: "auto" }} />
+                  <img src={getCardImageUrl(card)} alt={`Carta ${card}`} style={{ width: "100%", height: "auto" }} />
                   <div
                     style={{
                       position: "absolute",
@@ -123,6 +131,7 @@ const TopPanel = ({ pastCards, typeCard, displayedCard, pastCardsAll }) => {
                       color: "white",
                       fontWeight: "bold",
                       fontSize: "12px",
+                      borderRadius: "50%",
                     }}
                   >
                     {String(index + 1).padStart(2, "0")}
@@ -142,6 +151,7 @@ TopPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   displayedCard: PropTypes.number,
   pastCardsAll: PropTypes.arrayOf(PropTypes.number).isRequired,
+  getCardImageUrl: PropTypes.func.isRequired,
 };
 
 export default TopPanel;

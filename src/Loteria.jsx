@@ -41,6 +41,7 @@ const Loteria = () => {
   const [isReset, setIsReset] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [assetCache, setAssetCache] = useState({});
 
   // Función auxiliar para generar lista de assets
   const generateAssets = (type) => {
@@ -82,7 +83,10 @@ const Loteria = () => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current.src = src;
+
+      // Usar blob URL si existe en caché, sino usar src original
+      const audioSrc = assetCache[src] || src;
+      audioRef.current.src = audioSrc;
 
       const handleEnded = () => {
         if (callback) callback();
@@ -150,6 +154,13 @@ const Loteria = () => {
 
   const preloadImage = (cardNumber) => {
     const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
+    // Si ya tenemos el blob en caché, no necesitamos precargar con Image()
+    if (assetCache[imageUrl]) {
+      setNextImageUrl(assetCache[imageUrl]);
+      setIsImageLoaded(true);
+      return;
+    }
+
     const img = new Image();
     img.src = imageUrl;
     img.onload = () => {
@@ -246,20 +257,41 @@ const Loteria = () => {
     }
   };
 
+  // Helper para obtener la URL de la imagen (caché o original)
+  const getCardImageUrl = (cardNum) => {
+    if (!cardNum) return "";
+    const originalUrl = `/${typeCard}WEBP/${cardNum}.webp`;
+    return assetCache[originalUrl] || originalUrl;
+  };
+
   return (
     <div className="loteria-container loteria-modern">
-      {isLoading && <LoadingScreen assets={assetsToLoad} onComplete={() => setIsLoading(false)} />}
+      {isLoading && (
+        <LoadingScreen
+          assets={assetsToLoad}
+          onComplete={(cache) => {
+            setAssetCache(cache);
+            setIsLoading(false);
+          }}
+        />
+      )}
       {/* Fondo dinámico separado para evitar conflictos de layout */}
       <div className="loteria-bg-wrapper">
         <div
           className="loteria-dynamic-bg"
           style={{
-            backgroundImage: displayedCard ? `url(/${typeCard}WEBP/${displayedCard}.webp)` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);",
+            backgroundImage: displayedCard ? `url(${getCardImageUrl(displayedCard)})` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);",
           }}
         />
       </div>
 
-      <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
+      <TopPanel
+        pastCards={pastCards}
+        typeCard={typeCard}
+        displayedCard={displayedCard}
+        pastCardsAll={pastCardsAll}
+        getCardImageUrl={getCardImageUrl}
+      />
       {isMobile && <h1 className="title">Lotería Mexicana</h1>}
       {pastCardsAll.length > 0 && (
         <div style={{ textAlign: "center", fontSize: 15, position: "absolute", left: "0", top: "10px", right: "0", zIndex: 10 }}>
@@ -293,6 +325,7 @@ const Loteria = () => {
               typeCard={typeCard}
               isImageLoaded={isImageLoaded}
               nextImageUrl={nextImageUrl}
+              currentImageUrl={getCardImageUrl(currentCard)}
             />
 
             {/* Contador como componente independiente */}
