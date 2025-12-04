@@ -7,12 +7,14 @@ const LoadingScreen = ({ onComplete, assets }) => {
 
   useEffect(() => {
     const messages = [
-      "Barajando cartas...",
-      "Afinando la voz...",
-      "Buscando los frijoles...",
+      "Barajando la suerte...",
+      "Afinando la garganta...",
+      "Buscando los frijolitos...",
       "Limpiando la mesa...",
-      "Reuniendo a la familia...",
-      "Preparando el gritón...",
+      "Llamando a los abuelos...",
+      "¡Corre y se va corriendo!",
+      "Ordenando los cartones...",
+      "Barajando los cartones...",
     ];
     let msgIndex = 0;
 

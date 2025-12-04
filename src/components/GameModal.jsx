@@ -31,7 +31,7 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index: 2000;
+          z-index: 20000;
           backdrop-filter: blur(5px);
           animation: fadeIn 0.3s ease-out;
         }

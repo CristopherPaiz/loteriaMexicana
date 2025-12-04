@@ -220,7 +220,15 @@ const RightPanel = ({
           box-shadow: -5px 0 25px rgba(0,0,0,0.7);
           color: #f0f0f0;
           overflow-y: auto; /* Permitir scroll si el contenido es alto */
+          width: 300px; /* Ancho por defecto en desktop */
         }
+
+        @media (max-width: 768px) {
+          .right-panel {
+            width: 100% !important; /* Ocupar todo el ancho en mobile */
+          }
+        }
+
         .right-panel h3 {
           color: #ffffff;
           border-bottom: 2px solid #4CAF50;
