@@ -6,6 +6,7 @@ import MenuButton from "./components/MenuButton";
 import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 import CountdownTimer from "./components/CountdownTimer";
 import LoadingScreen from "./components/LoadingScreen";
+import GameModal from "./components/GameModal";
 import "./Loteria.css";
 
 const TIME_BETWEEN_CARDS = 5;
@@ -15,6 +16,7 @@ const CARD_SHOW_TOP_MOBILE = 5;
 const CARD_SHOW_TOP_DESKTOP = 10;
 const PRELOAD_TIME = 1; // Tiempo en segundos para precargar la siguiente imagen
 const isMobile = window.innerWidth <= 768;
+const STORAGE_KEY = "loteria_game_state";
 
 const Loteria = () => {
   const [currentCard, setCurrentCard] = useState(1);
@@ -30,6 +32,11 @@ const Loteria = () => {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const changeSoundTimerRef = useRef(null);
+
+  // Refs para el temporizador preciso
+  const startTimeRef = useRef(null);
+  const remainingTimeRef = useRef(null);
+
   // Eliminamos soundQueueRef y isPlayingAudioRef para evitar colas
   const [time, setTime] = useState(TIME_BETWEEN_CARDS);
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
@@ -42,6 +49,11 @@ const Loteria = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [assetCache, setAssetCache] = useState({});
+
+  // Estados para modales
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [showResumeConfirm, setShowResumeConfirm] = useState(false);
+  const [savedGameState, setSavedGameState] = useState(null);
 
   // Función auxiliar para generar lista de assets
   const generateAssets = (type) => {
@@ -65,6 +77,50 @@ const Loteria = () => {
     // Actualizar assets si cambia el tipo de carta, pero no forzar recarga completa si ya inició
     setAssetsToLoad(generateAssets(typeCard));
   }, [typeCard]);
+
+  // Cargar juego guardado al inicio
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsedState = JSON.parse(saved);
+        // Solo ofrecer reanudar si el juego estaba en progreso y no terminó
+        if (parsedState.isPlaying && !parsedState.gameOver && parsedState.deck.length > 0) {
+          setSavedGameState(parsedState);
+          setShowResumeConfirm(true);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      } catch (e) {
+        console.error("Error parsing saved game:", e);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  // Guardar estado del juego
+  useEffect(() => {
+    if (isPlaying && deck.length > 0) {
+      const stateToSave = {
+        currentCard,
+        deck,
+        pastCards,
+        pastCardsAll,
+        displayedCard,
+        time,
+        typeCard,
+        isPlaying,
+        isPaused: true, // Siempre guardar como pausado para que no arranque solo
+        remainingTime: remainingTimeRef.current || time * 1000, // Guardar tiempo restante aproximado
+        gameOver,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } else if (!isPlaying && !isLoading && !showResumeConfirm) {
+      // Limpiar si el juego terminó o se detuvo manualmente (y no estamos en el modal de resume)
+      // Pero cuidado de no borrarlo mientras decidimos si reanudar
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [currentCard, deck, pastCards, pastCardsAll, displayedCard, time, typeCard, isPlaying, gameOver, isLoading, showResumeConfirm]);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -104,8 +160,11 @@ const Loteria = () => {
   };
 
   useEffect(() => {
-    const shuffledDeck = shuffleDeck(initializeDeck());
-    setDeck(shuffledDeck);
+    // Solo inicializar deck si no estamos reanudando un juego
+    if (!showResumeConfirm && !savedGameState) {
+      const shuffledDeck = shuffleDeck(initializeDeck());
+      setDeck(shuffledDeck);
+    }
 
     // Limpiar todo al desmontar el componente
     return () => {
@@ -120,24 +179,37 @@ const Loteria = () => {
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
+      // Si no hay tiempo restante guardado, usar el tiempo completo
+      const duration = remainingTimeRef.current !== null ? remainingTimeRef.current : time * 1000;
+
+      startTimeRef.current = Date.now();
+
       // Programar el próximo cambio de carta
       timerRef.current = setTimeout(() => {
+        remainingTimeRef.current = null; // Resetear tiempo restante al completar
         drawNextCard();
-      }, time * 1000);
+      }, duration);
 
-      // Programar la precarga de la siguiente imagen
+      // Programar la precarga de la siguiente imagen (ajustado al tiempo restante)
+      const preloadDelay = Math.max(0, duration - PRELOAD_TIME * 1000);
       const preloadTimer = setTimeout(() => {
         if (deck.length > 0) {
           const nextCardNumber = deck[deck.length - 1];
           preloadImage(nextCardNumber);
         }
-      }, (time - PRELOAD_TIME) * 1000);
+      }, preloadDelay);
 
       return () => {
         clearTimeout(timerRef.current);
         clearTimeout(preloadTimer);
       };
     } else {
+      // Al pausar, calcular y guardar el tiempo restante
+      if (startTimeRef.current && isPlaying) {
+        const elapsed = Date.now() - startTimeRef.current;
+        const currentRemaining = (remainingTimeRef.current !== null ? remainingTimeRef.current : time * 1000) - elapsed;
+        remainingTimeRef.current = Math.max(0, currentRemaining);
+      }
       clearTimeout(timerRef.current);
     }
   }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
@@ -145,8 +217,20 @@ const Loteria = () => {
   useEffect(() => {
     let intervalId;
     if (isPlaying && !isPaused && countdown > 0) {
+      // Sincronizar el countdown visual con el tiempo restante real si existe
+      if (remainingTimeRef.current) {
+        setCountdown(Math.ceil(remainingTimeRef.current / 1000));
+      }
+
       intervalId = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown((prev) => {
+          const newVal = prev - 1;
+          // Actualizar remainingTimeRef para mantener sincronía aproximada
+          if (remainingTimeRef.current) {
+            remainingTimeRef.current -= 1000;
+          }
+          return newVal;
+        });
       }, 1000);
     }
     return () => clearInterval(intervalId);
@@ -174,6 +258,7 @@ const Loteria = () => {
     // Limpiar temporizadores
     clearTimeout(timerRef.current);
     clearTimeout(changeSoundTimerRef.current);
+    remainingTimeRef.current = null; // Resetear tiempo restante
 
     const shuffledDeck = shuffleDeck(initializeDeck());
     setDeck(shuffledDeck);
@@ -192,9 +277,33 @@ const Loteria = () => {
     });
   };
 
+  const resumeSavedGame = () => {
+    if (savedGameState) {
+      setDeck(savedGameState.deck);
+      setCurrentCard(savedGameState.currentCard);
+      setPastCards(savedGameState.pastCards);
+      setPastCardsAll(savedGameState.pastCardsAll);
+      setDisplayedCard(savedGameState.displayedCard);
+      setTime(savedGameState.time);
+      setTypeCard(savedGameState.typeCard);
+      setGameOver(savedGameState.gameOver);
+
+      // Restaurar tiempo restante
+      remainingTimeRef.current = savedGameState.remainingTime;
+      setCountdown(Math.ceil(savedGameState.remainingTime / 1000));
+
+      setIsPlaying(true);
+      setIsPaused(true); // Reanudar en pausa para que el usuario decida cuándo seguir
+
+      setShowResumeConfirm(false);
+      setSavedGameState(null);
+    }
+  };
+
   const drawNextCard = () => {
     // Cancelar cualquier temporizador pendiente
     clearTimeout(timerRef.current);
+    remainingTimeRef.current = null; // Resetear tiempo restante para la nueva carta
 
     if (deck.length > 0) {
       const newCard = deck.pop();
@@ -209,17 +318,11 @@ const Loteria = () => {
       setCountdown(time);
 
       // Reproducir sonido inmediatamente (corta el anterior)
-      // Primero el "cambio de carta" (opcional, si es muy rápido puede ser molesto, pero lo mantenemos)
-      // playAudioImmediate("/sounds/sounds/0. cambio carta.mp3");
-
-      // NOTA: Para que sea más fluido, reproducimos DIRECTAMENTE la carta
-      // Si el usuario quiere el sonido de "cambio", podemos descomentar arriba,
-      // pero eso retrasaría la voz de la carta.
-      // Vamos a reproducir la voz de la carta directamente para máxima respuesta.
       playAudioImmediate(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
     } else {
       setIsPlaying(false);
       setGameOver(true);
+      localStorage.removeItem(STORAGE_KEY); // Limpiar guardado al terminar
     }
   };
 
@@ -236,25 +339,30 @@ const Loteria = () => {
     setActiveVoice(voice);
   };
 
-  const stopGame = () => {
-    if (window.confirm("¿Estás seguro de que quieres detener el juego? Esto reiniciará todo.")) {
-      setIsPlaying(false);
-      setIsPaused(false);
-      setIsPaused(false);
-      clearTimeout(timerRef.current);
-      clearTimeout(changeSoundTimerRef.current);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      setDeck(shuffleDeck(initializeDeck()));
-      setPastCards([]);
-      setPastCardsAll([]);
-      setCurrentCard(1);
-      setIsImageLoaded(false);
-      setNextImageUrl("");
-      setGameOver(false);
+  const requestStopGame = () => {
+    setShowStopConfirm(true);
+  };
+
+  const confirmStopGame = () => {
+    setIsPlaying(false);
+    setIsPaused(false);
+    clearTimeout(timerRef.current);
+    clearTimeout(changeSoundTimerRef.current);
+    remainingTimeRef.current = null;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
+    setDeck(shuffleDeck(initializeDeck()));
+    setPastCards([]);
+    setPastCardsAll([]);
+    setCurrentCard(1);
+    setIsImageLoaded(false);
+    setNextImageUrl("");
+    setGameOver(false);
+    localStorage.removeItem(STORAGE_KEY);
+    setShowStopConfirm(false);
   };
 
   // Helper para obtener la URL de la imagen (caché o original)
@@ -319,7 +427,7 @@ const Loteria = () => {
               togglePlay={togglePlay}
               startGame={startGame}
               drawNextCard={drawNextCard}
-              stopGame={stopGame}
+              stopGame={requestStopGame}
               isPlaying={isPlaying}
               isPaused={isPaused}
               typeCard={typeCard}
@@ -354,6 +462,46 @@ const Loteria = () => {
       <audio ref={audioRef} />
 
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {/* Modal de confirmación para detener juego */}
+      <GameModal
+        isOpen={showStopConfirm}
+        title="¿Reiniciar Juego?"
+        onConfirm={confirmStopGame}
+        onCancel={() => setShowStopConfirm(false)}
+        confirmText="Sí, reiniciar"
+        cancelText="Cancelar"
+      >
+        <p>¿Estás seguro de que quieres detener el juego? Se perderá el progreso actual.</p>
+      </GameModal>
+
+      {/* Modal de confirmación para reanudar juego */}
+      <GameModal
+        isOpen={showResumeConfirm}
+        title="Juego Encontrado"
+        onConfirm={resumeSavedGame}
+        onCancel={() => {
+          setShowResumeConfirm(false);
+          localStorage.removeItem(STORAGE_KEY);
+          setSavedGameState(null);
+        }}
+        confirmText="Reanudar"
+        cancelText="Nuevo Juego"
+      >
+        <p>Se encontró un juego previo incompleto.</p>
+        {savedGameState && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10px" }}>
+            <p style={{ fontSize: "0.9rem", marginBottom: "10px" }}>Última carta:</p>
+            <img
+              src={getCardImageUrl(savedGameState.displayedCard)}
+              alt="Última carta"
+              style={{ width: "80px", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0,0,0,0.3)" }}
+            />
+            <p style={{ fontSize: "0.8rem", marginTop: "10px", opacity: 0.7 }}>Cartas restantes: {savedGameState.deck.length}</p>
+          </div>
+        )}
+      </GameModal>
+
       <p></p>
       <p></p>
     </div>
