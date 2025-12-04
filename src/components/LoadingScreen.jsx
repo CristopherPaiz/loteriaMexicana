@@ -96,7 +96,7 @@ const LoadingScreen = ({ onComplete, assets }) => {
       </div>
 
       <div className="loading-footer">
-        <p>Made by Cristopher Paiz</p>
+        <p>Hecho por Cristopher Paiz</p>
       </div>
 
       <style>{`
