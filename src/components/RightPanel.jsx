@@ -225,7 +225,7 @@ const RightPanel = ({
 
         @media (max-width: 768px) {
           .right-panel {
-            width: 85% !important; /* Ocupar todo el ancho en mobile */
+            width: 80% !important; /* Ocupar todo el ancho en mobile */
           }
         }
 

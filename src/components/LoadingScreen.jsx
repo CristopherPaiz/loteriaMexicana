@@ -7,14 +7,13 @@ const LoadingScreen = ({ onComplete, assets }) => {
 
   useEffect(() => {
     const messages = [
+      "Limpiando la mesa...",
+      "Buscando los frijolitos...",
+      "Llamando a los abuelos...",
       "Barajando la suerte...",
       "Afinando la garganta...",
-      "Buscando los frijolitos...",
-      "Limpiando la mesa...",
-      "Llamando a los abuelos...",
-      "¡Corre y se va corriendo!",
-      "Ordenando los cartones...",
       "Barajando los cartones...",
+      "¡Corre y se va corriendo!",
     ];
     let msgIndex = 0;
 
@@ -111,7 +110,7 @@ const LoadingScreen = ({ onComplete, assets }) => {
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index: 9999;
+          z-index: 30000;
           color: white;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           flex-direction: column;
