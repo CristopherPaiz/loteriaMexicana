@@ -52,7 +52,10 @@ const Loteria = () => {
       "/sounds/sounds/0. pause.mp3",
       "/sounds/mujer/1. mujer apertura.mp3",
     ];
-    return [...images, ...sounds];
+    // Agregar audios de voz (mujer por defecto)
+    const voiceSounds = Array.from({ length: CARD_LENGTH }, (_, i) => `/sounds/mujer/${i + 1}. mujer.mp3`);
+
+    return [...images, ...sounds, ...voiceSounds];
   };
 
   const [assetsToLoad, setAssetsToLoad] = useState(() => generateAssets(INITIAL_CARD_STYLE));
