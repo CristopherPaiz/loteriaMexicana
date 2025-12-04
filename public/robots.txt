@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loteria-crp.vercel.app/sitemap.xml
