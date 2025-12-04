@@ -105,7 +105,7 @@ const LoadingScreen = ({ onComplete, assets }) => {
           top: 0;
           left: 0;
           width: 100vw;
-          height: 100vh;
+          height: 100dvh;
           background: radial-gradient(circle at center, #2b2f3a 0%, #1a1c20 100%);
           display: flex;
           justify-content: center;
