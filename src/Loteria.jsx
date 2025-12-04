@@ -53,9 +53,29 @@ const Loteria = () => {
   const [dimLevel, setDimLevel] = useState(0.5);
 
   // Estados para modales
+  // Estados para modales
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
+  const [showVolumeWarning, setShowVolumeWarning] = useState(false);
+  const [pendingVolume, setPendingVolume] = useState(null);
   const [savedGameState, setSavedGameState] = useState(null);
+
+  const handleVolumeChangeRequest = (level) => {
+    if (level > 1.0 && level > volumeBoost) {
+      setPendingVolume(level);
+      setShowVolumeWarning(true);
+    } else {
+      setVolumeBoost(level);
+    }
+  };
+
+  const confirmVolumeChange = () => {
+    if (pendingVolume) {
+      setVolumeBoost(pendingVolume);
+      setPendingVolume(null);
+    }
+    setShowVolumeWarning(false);
+  };
 
   // Audio Context Refs
   const audioContextRef = useRef(null);
@@ -524,7 +544,7 @@ const Loteria = () => {
             typeCard={typeCard}
             setTypeCard={setTypeCard}
             volumeBoost={volumeBoost}
-            setVolumeBoost={setVolumeBoost}
+            onVolumeChangeRequest={handleVolumeChangeRequest}
             dimLevel={dimLevel}
             setDimLevel={setDimLevel}
             onOpenGenerator={() => {
@@ -576,6 +596,21 @@ const Loteria = () => {
             <p style={{ fontSize: "0.8rem", marginTop: "10px", opacity: 0.7 }}>Cartas restantes: {savedGameState.deck.length}</p>
           </div>
         )}
+      </GameModal>
+
+      {/* Modal de advertencia de volumen */}
+      <GameModal
+        isOpen={showVolumeWarning}
+        title="⚠️ Precaución"
+        onConfirm={confirmVolumeChange}
+        onCancel={() => setShowVolumeWarning(false)}
+        confirmText="Entiendo, aumentar"
+        cancelText="Cancelar"
+      >
+        <p style={{ color: "#ffcc80" }}>
+          Aumentar el volumen por encima del 100% puede causar distorsión o ser perjudicial para tus oídos y altavoces.
+        </p>
+        <p>¿Estás seguro de que deseas continuar?</p>
       </GameModal>
 
       <p></p>

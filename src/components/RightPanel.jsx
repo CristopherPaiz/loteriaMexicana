@@ -1,8 +1,7 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
 import { FaTimes } from "react-icons/fa";
-import GameModal from "./GameModal";
 
 const RightPanel = ({
   showMenu,
@@ -15,30 +14,11 @@ const RightPanel = ({
   setTypeCard,
   onOpenGenerator,
   volumeBoost = 1.0,
-  setVolumeBoost = () => {},
+  onVolumeChangeRequest = () => {},
   dimLevel = 0.5,
   setDimLevel = () => {},
 }) => {
   const panelRef = useRef(null);
-  const [showVolumeWarning, setShowVolumeWarning] = useState(false);
-  const [pendingVolume, setPendingVolume] = useState(null);
-
-  const handleVolumeChange = (level) => {
-    if (level > 1.0 && level > volumeBoost) {
-      setPendingVolume(level);
-      setShowVolumeWarning(true);
-    } else {
-      setVolumeBoost(level);
-    }
-  };
-
-  const confirmVolumeChange = () => {
-    if (pendingVolume) {
-      setVolumeBoost(pendingVolume);
-      setPendingVolume(null);
-    }
-    setShowVolumeWarning(false);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -171,7 +151,7 @@ const RightPanel = ({
           {[1.0, 1.5, 2.0].map((level) => (
             <button
               key={level}
-              onClick={() => handleVolumeChange(level)}
+              onClick={() => onVolumeChangeRequest(level)}
               style={{
                 padding: "8px 12px",
                 border: "none",
@@ -262,21 +242,6 @@ const RightPanel = ({
           border-radius: 3px;
         }
       `}</style>
-
-      {/* Modal de advertencia de volumen */}
-      <GameModal
-        isOpen={showVolumeWarning}
-        title="⚠️ Precaución"
-        onConfirm={confirmVolumeChange}
-        onCancel={() => setShowVolumeWarning(false)}
-        confirmText="Entiendo, aumentar"
-        cancelText="Cancelar"
-      >
-        <p style={{ color: "#ffcc80" }}>
-          Aumentar el volumen por encima del 100% puede causar distorsión o ser perjudicial para tus oídos y altavoces.
-        </p>
-        <p>¿Estás seguro de que deseas continuar?</p>
-      </GameModal>
     </div>
   );
 };
@@ -292,7 +257,7 @@ RightPanel.propTypes = {
   setTypeCard: PropTypes.func.isRequired,
   onOpenGenerator: PropTypes.func.isRequired,
   volumeBoost: PropTypes.number,
-  setVolumeBoost: PropTypes.func,
+  onVolumeChangeRequest: PropTypes.func,
   dimLevel: PropTypes.number,
   setDimLevel: PropTypes.func,
 };
