@@ -5,6 +5,7 @@ import RightPanel from "./components/RightPanel";
 import MenuButton from "./components/MenuButton";
 import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 import CountdownTimer from "./components/CountdownTimer";
+import LoadingScreen from "./components/LoadingScreen";
 import "./Loteria.css";
 
 const TIME_BETWEEN_CARDS = 5;
@@ -25,11 +26,11 @@ const Loteria = () => {
   const [activeVoice, setActiveVoice] = useState(voice[1]);
   const [showMenu, setShowMenu] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const changeSoundTimerRef = useRef(null);
-  const soundQueueRef = useRef([]);  // Cola para sonidos
-  const isPlayingAudioRef = useRef(false); // Estado para saber si hay un audio en reproducción
+  // Eliminamos soundQueueRef y isPlayingAudioRef para evitar colas
   const [time, setTime] = useState(TIME_BETWEEN_CARDS);
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -39,6 +40,21 @@ const Loteria = () => {
   const [countdown, setCountdown] = useState(TIME_BETWEEN_CARDS);
   const [isReset, setIsReset] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [assetsToLoad, setAssetsToLoad] = useState([]);
+
+  useEffect(() => {
+    // Generar lista de assets para precargar
+    const images = Array.from({ length: CARD_LENGTH }, (_, i) => `/${typeCard}WEBP/${i + 1}.webp`);
+    const sounds = [
+      "/sounds/sounds/0. barajar.mp3",
+      "/sounds/sounds/0. cambio carta.mp3",
+      "/sounds/sounds/0. play.mp3",
+      "/sounds/sounds/0. pause.mp3",
+      "/sounds/mujer/1. mujer apertura.mp3",
+    ];
+    setAssetsToLoad([...images, ...sounds]);
+  }, [typeCard]); // Recargar si cambia el tipo de carta (HD/SD)
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
@@ -52,66 +68,40 @@ const Loteria = () => {
     return deckToShuffle;
   };
 
-  // Función para reproducir la cola de sonidos
-  const playSoundQueue = () => {
-    if (soundQueueRef.current.length === 0 || isPlayingAudioRef.current) {
-      return;
-    }
-
-    isPlayingAudioRef.current = true;
-    const nextSound = soundQueueRef.current.shift();
-
+  // Función para reproducir audio inmediatamente, cortando el anterior
+  const playAudioImmediate = (src, callback) => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current.src = nextSound.src;
-      
-      audioRef.current.onended = () => {
-        isPlayingAudioRef.current = false;
-        if (nextSound.callback) {
-          nextSound.callback();
-        }
-        // Reproducir el siguiente sonido en la cola
-        playSoundQueue();
+      audioRef.current.src = src;
+
+      const handleEnded = () => {
+        if (callback) callback();
+        audioRef.current.removeEventListener("ended", handleEnded);
       };
-      
-      audioRef.current.play().catch(err => {
+
+      audioRef.current.addEventListener("ended", handleEnded);
+
+      audioRef.current.play().catch((err) => {
         console.error("Error al reproducir audio:", err);
-        isPlayingAudioRef.current = false;
-        playSoundQueue(); // Intentar con el siguiente sonido
+        // Si falla, ejecutamos el callback de todos modos para no detener la lógica
+        if (callback) callback();
       });
     }
-  };
-
-  // Función para agregar sonidos a la cola
-  const queueSound = (soundPath, callback) => {
-    soundQueueRef.current.push({ src: soundPath, callback });
-    
-    // Si no hay sonido reproduciéndose, iniciar la cola
-    if (!isPlayingAudioRef.current) {
-      playSoundQueue();
-    }
-  };
-
-  // Función para limpiar la cola de sonidos
-  const clearSoundQueue = () => {
-    soundQueueRef.current = [];
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    isPlayingAudioRef.current = false;
   };
 
   useEffect(() => {
     const shuffledDeck = shuffleDeck(initializeDeck());
     setDeck(shuffledDeck);
-    
+
     // Limpiar todo al desmontar el componente
     return () => {
       clearTimeout(timerRef.current);
       clearTimeout(changeSoundTimerRef.current);
-      clearSoundQueue();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     };
   }, []);
 
@@ -161,11 +151,10 @@ const Loteria = () => {
   };
 
   const startGame = () => {
-    // Limpiar temporizadores y cola de sonidos
+    // Limpiar temporizadores
     clearTimeout(timerRef.current);
     clearTimeout(changeSoundTimerRef.current);
-    clearSoundQueue();
-    
+
     const shuffledDeck = shuffleDeck(initializeDeck());
     setDeck(shuffledDeck);
     setIsPlaying(true);
@@ -175,10 +164,10 @@ const Loteria = () => {
     setGameOver(false);
     setCountdown(time);
 
-    // Reproducir el sonido de barajar y luego el de apertura
-    queueSound("/sounds/sounds/0. barajar.mp3", () => {
+    // Secuencia de inicio: Barajar -> Mujer Apertura -> Iniciar juego
+    playAudioImmediate("/sounds/sounds/0. barajar.mp3", () => {
       if (!isReset && time >= 4) {
-        queueSound(`/sounds/mujer/1. mujer apertura.mp3`);
+        playAudioImmediate(`/sounds/mujer/1. mujer apertura.mp3`);
       }
     });
   };
@@ -186,24 +175,28 @@ const Loteria = () => {
   const drawNextCard = () => {
     // Cancelar cualquier temporizador pendiente
     clearTimeout(timerRef.current);
-    
+
     if (deck.length > 0) {
       const newCard = deck.pop();
-      
-      // Primero reproducir el sonido de cambio de carta
-      queueSound("/sounds/sounds/0. cambio carta.mp3", () => {
-        // Cuando termine el sonido de cambio, actualizar la carta y reproducir su sonido
-        setCurrentCard(newCard);
-        setDeck([...deck]);
-        setIsImageLoaded(false);
-        setDisplayedCard(newCard);
-        setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
-        setPastCardsAll((prev) => [newCard, ...prev]);
-        setCountdown(time);
-        
-        // Reproducir el sonido de la carta
-        queueSound(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
-      });
+
+      // Actualización visual INMEDIATA
+      setCurrentCard(newCard);
+      setDeck([...deck]);
+      setIsImageLoaded(false);
+      setDisplayedCard(newCard);
+      setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
+      setPastCardsAll((prev) => [newCard, ...prev]);
+      setCountdown(time);
+
+      // Reproducir sonido inmediatamente (corta el anterior)
+      // Primero el "cambio de carta" (opcional, si es muy rápido puede ser molesto, pero lo mantenemos)
+      // playAudioImmediate("/sounds/sounds/0. cambio carta.mp3");
+
+      // NOTA: Para que sea más fluido, reproducimos DIRECTAMENTE la carta
+      // Si el usuario quiere el sonido de "cambio", podemos descomentar arriba,
+      // pero eso retrasaría la voz de la carta.
+      // Vamos a reproducir la voz de la carta directamente para máxima respuesta.
+      playAudioImmediate(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
     } else {
       setIsPlaying(false);
       setGameOver(true);
@@ -211,7 +204,7 @@ const Loteria = () => {
   };
 
   const playSound = (soundName) => {
-    queueSound(`/sounds/sounds/${soundName}.mp3`);
+    playAudioImmediate(`/sounds/sounds/${soundName}.mp3`);
   };
 
   const togglePlay = () => {
@@ -227,9 +220,13 @@ const Loteria = () => {
     if (window.confirm("¿Estás seguro de que quieres detener el juego? Esto reiniciará todo.")) {
       setIsPlaying(false);
       setIsPaused(false);
+      setIsPaused(false);
       clearTimeout(timerRef.current);
       clearTimeout(changeSoundTimerRef.current);
-      clearSoundQueue();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setDeck(shuffleDeck(initializeDeck()));
       setPastCards([]);
       setPastCardsAll([]);
@@ -242,18 +239,17 @@ const Loteria = () => {
 
   return (
     <div className="loteria-container loteria-modern">
+      {isLoading && <LoadingScreen assets={assetsToLoad} onComplete={() => setIsLoading(false)} />}
       {/* Fondo dinámico separado para evitar conflictos de layout */}
       <div className="loteria-bg-wrapper">
-        <div 
-          className="loteria-dynamic-bg" 
+        <div
+          className="loteria-dynamic-bg"
           style={{
-            backgroundImage: displayedCard ? 
-              `url(/${typeCard}WEBP/${displayedCard}.webp)` : 
-              'linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);'
+            backgroundImage: displayedCard ? `url(/${typeCard}WEBP/${displayedCard}.webp)` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);",
           }}
         />
       </div>
-      
+
       <TopPanel pastCards={pastCards} typeCard={typeCard} displayedCard={displayedCard} pastCardsAll={pastCardsAll} />
       {isMobile && <h1 className="title">Lotería Mexicana</h1>}
       {pastCardsAll.length > 0 && (
@@ -289,11 +285,9 @@ const Loteria = () => {
               isImageLoaded={isImageLoaded}
               nextImageUrl={nextImageUrl}
             />
-            
+
             {/* Contador como componente independiente */}
-            {isPlaying && !isPaused && (
-              <CountdownTimer countdown={countdown} totalTime={time} />
-            )}
+            {isPlaying && !isPaused && <CountdownTimer countdown={countdown} totalTime={time} />}
           </div>
           <p></p>
           <p></p>
@@ -313,9 +307,9 @@ const Loteria = () => {
       )}
       <audio ref={audioRef} />
       <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-        <button 
-          style={{ 
-            padding: "0.7rem 1.5rem", 
+        <button
+          style={{
+            padding: "0.7rem 1.5rem",
             backgroundColor: "#a33",
             color: "white",
             border: "none",
@@ -323,8 +317,8 @@ const Loteria = () => {
             fontWeight: "bold",
             cursor: "pointer",
             boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-            transition: "all 0.3s"
-          }} 
+            transition: "all 0.3s",
+          }}
           onClick={() => setIsModalOpen(true)}
         >
           Generador de Cartones
