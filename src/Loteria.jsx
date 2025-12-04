@@ -350,9 +350,7 @@ const Loteria = () => {
 
     // Secuencia de inicio: Barajar -> Mujer Apertura -> Iniciar juego
     playAudioImmediate("/sounds/sounds/0. barajar.mp3", () => {
-      if (!isReset && time >= 4) {
-        playAudioImmediate(`/sounds/mujer/1. mujer apertura.mp3`);
-      }
+      playAudioImmediate(`/sounds/mujer/1. mujer apertura.mp3`);
     });
   };
 
@@ -437,25 +435,9 @@ const Loteria = () => {
   };
 
   const confirmStopGame = () => {
-    setIsPlaying(false);
-    setIsPaused(false);
-    clearTimeout(timerRef.current);
-    clearTimeout(changeSoundTimerRef.current);
-    remainingTimeRef.current = null;
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setDeck(shuffleDeck(initializeDeck()));
-    setPastCards([]);
-    setPastCardsAll([]);
-    setCurrentCard(1);
-    setIsImageLoaded(false);
-    setNextImageUrl("");
-    setGameOver(false);
-    localStorage.removeItem(STORAGE_KEY);
     setShowStopConfirm(false);
+    setIsReset(false);
+    startGame();
   };
 
   // Helper para obtener la URL de la imagen (caché o original)
