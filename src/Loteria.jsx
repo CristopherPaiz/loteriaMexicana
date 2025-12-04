@@ -307,29 +307,16 @@ const Loteria = () => {
             time={time}
             typeCard={typeCard}
             setTypeCard={setTypeCard}
+            onOpenGenerator={() => {
+              setShowMenu(false);
+              setIsModalOpen(true);
+            }}
           />
-          <MenuButton onClick={() => setShowMenu(!showMenu)} />
+          {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
         </>
       )}
       <audio ref={audioRef} />
-      <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-        <button
-          style={{
-            padding: "0.7rem 1.5rem",
-            backgroundColor: "#a33",
-            color: "white",
-            border: "none",
-            borderRadius: "30px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-            transition: "all 0.3s",
-          }}
-          onClick={() => setIsModalOpen(true)}
-        >
-          Generador de Cartones
-        </button>
-      </div>
+
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <p></p>
       <p></p>
