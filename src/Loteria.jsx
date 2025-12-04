@@ -41,11 +41,10 @@ const Loteria = () => {
   const [isReset, setIsReset] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [assetsToLoad, setAssetsToLoad] = useState([]);
 
-  useEffect(() => {
-    // Generar lista de assets para precargar
-    const images = Array.from({ length: CARD_LENGTH }, (_, i) => `/${typeCard}WEBP/${i + 1}.webp`);
+  // Función auxiliar para generar lista de assets
+  const generateAssets = (type) => {
+    const images = Array.from({ length: CARD_LENGTH }, (_, i) => `/${type}WEBP/${i + 1}.webp`);
     const sounds = [
       "/sounds/sounds/0. barajar.mp3",
       "/sounds/sounds/0. cambio carta.mp3",
@@ -53,8 +52,15 @@ const Loteria = () => {
       "/sounds/sounds/0. pause.mp3",
       "/sounds/mujer/1. mujer apertura.mp3",
     ];
-    setAssetsToLoad([...images, ...sounds]);
-  }, [typeCard]); // Recargar si cambia el tipo de carta (HD/SD)
+    return [...images, ...sounds];
+  };
+
+  const [assetsToLoad, setAssetsToLoad] = useState(() => generateAssets(INITIAL_CARD_STYLE));
+
+  useEffect(() => {
+    // Actualizar assets si cambia el tipo de carta, pero no forzar recarga completa si ya inició
+    setAssetsToLoad(generateAssets(typeCard));
+  }, [typeCard]);
 
   const initializeDeck = () => {
     return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
