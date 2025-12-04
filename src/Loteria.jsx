@@ -49,11 +49,18 @@ const Loteria = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [assetCache, setAssetCache] = useState({});
+  const [volumeBoost, setVolumeBoost] = useState(1.0);
+  const [dimLevel, setDimLevel] = useState(0.5);
 
   // Estados para modales
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
   const [savedGameState, setSavedGameState] = useState(null);
+
+  // Audio Context Refs
+  const audioContextRef = useRef(null);
+  const gainNodeRef = useRef(null);
+  const sourceNodeRef = useRef(null);
 
   // Función auxiliar para generar lista de assets
   const generateAssets = (type) => {
@@ -78,9 +85,21 @@ const Loteria = () => {
     setAssetsToLoad(generateAssets(typeCard));
   }, [typeCard]);
 
-  // Cargar juego guardado al inicio
+  // Cargar juego y configuraciones guardadas al inicio
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
+    const savedSettings = localStorage.getItem("loteria_settings");
+
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        if (parsedSettings.volumeBoost) setVolumeBoost(parsedSettings.volumeBoost);
+        if (parsedSettings.dimLevel !== undefined) setDimLevel(parsedSettings.dimLevel);
+      } catch (e) {
+        console.error("Error parsing settings:", e);
+      }
+    }
+
     if (saved) {
       try {
         const parsedState = JSON.parse(saved);
@@ -97,6 +116,25 @@ const Loteria = () => {
       }
     }
   }, []);
+
+  // Guardar configuraciones cuando cambian
+  useEffect(() => {
+    localStorage.setItem("loteria_settings", JSON.stringify({ volumeBoost, dimLevel }));
+  }, [volumeBoost, dimLevel]);
+
+  // Inicializar AudioContext
+  useEffect(() => {
+    if (!audioContextRef.current) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+    }
+    // Actualizar ganancia
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volumeBoost;
+    }
+  }, [volumeBoost]);
 
   // Guardar estado del juego
   useEffect(() => {
@@ -137,12 +175,28 @@ const Loteria = () => {
   // Función para reproducir audio inmediatamente, cortando el anterior
   const playAudioImmediate = (src, callback) => {
     if (audioRef.current) {
+      // Resume AudioContext if suspended (browser policy)
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume();
+      }
+
+      // Desconectar nodo anterior si existe
+      if (sourceNodeRef.current) {
+        // sourceNodeRef.current.disconnect(); // No es estrictamente necesario si el elemento de audio cambia
+      }
+
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
 
       // Usar blob URL si existe en caché, sino usar src original
       const audioSrc = assetCache[src] || src;
       audioRef.current.src = audioSrc;
+
+      // Conectar elemento de audio al nodo de ganancia si no está conectado
+      if (!sourceNodeRef.current && audioContextRef.current && gainNodeRef.current) {
+        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        sourceNodeRef.current.connect(gainNodeRef.current);
+      }
 
       const handleEnded = () => {
         if (callback) callback();
@@ -173,6 +227,9 @@ const Loteria = () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);
@@ -403,6 +460,7 @@ const Loteria = () => {
           className="loteria-dynamic-bg"
           style={{
             backgroundImage: displayedCard ? `url(${getCardImageUrl(displayedCard)})` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);",
+            opacity: dimLevel, // Aplicar nivel de dim
           }}
         />
       </div>
@@ -465,6 +523,10 @@ const Loteria = () => {
             time={time}
             typeCard={typeCard}
             setTypeCard={setTypeCard}
+            volumeBoost={volumeBoost}
+            setVolumeBoost={setVolumeBoost}
+            dimLevel={dimLevel}
+            setDimLevel={setDimLevel}
             onOpenGenerator={() => {
               setShowMenu(false);
               setIsModalOpen(true);

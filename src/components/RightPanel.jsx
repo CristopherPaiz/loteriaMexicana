@@ -1,10 +1,44 @@
 import PropTypes from "prop-types";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import VoiceButton from "./VoiceButton";
 import { FaTimes } from "react-icons/fa";
+import GameModal from "./GameModal";
 
-const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, setTime, time, typeCard, setTypeCard, onOpenGenerator }) => {
+const RightPanel = ({
+  showMenu,
+  activeVoice,
+  handleVoiceChange,
+  setShowMenu,
+  setTime,
+  time,
+  typeCard,
+  setTypeCard,
+  onOpenGenerator,
+  volumeBoost = 1.0,
+  setVolumeBoost = () => {},
+  dimLevel = 0.5,
+  setDimLevel = () => {},
+}) => {
   const panelRef = useRef(null);
+  const [showVolumeWarning, setShowVolumeWarning] = useState(false);
+  const [pendingVolume, setPendingVolume] = useState(null);
+
+  const handleVolumeChange = (level) => {
+    if (level > 1.0 && level > volumeBoost) {
+      setPendingVolume(level);
+      setShowVolumeWarning(true);
+    } else {
+      setVolumeBoost(level);
+    }
+  };
+
+  const confirmVolumeChange = () => {
+    if (pendingVolume) {
+      setVolumeBoost(pendingVolume);
+      setPendingVolume(null);
+    }
+    setShowVolumeWarning(false);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -132,6 +166,46 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           ))}
         </div>
 
+        <h3>Volumen Extra (Precaución)</h3>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "20px" }}>
+          {[1.0, 1.5, 2.0].map((level) => (
+            <button
+              key={level}
+              onClick={() => handleVolumeChange(level)}
+              style={{
+                padding: "8px 12px",
+                border: "none",
+                borderRadius: "5px",
+                backgroundColor: volumeBoost === level ? (level > 1.0 ? "#ff9800" : "#4CAF50") : "rgba(255, 255, 255, 0.15)",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: volumeBoost === level ? "bold" : "normal",
+                flex: 1,
+              }}
+            >
+              {level * 100}%
+            </button>
+          ))}
+        </div>
+
+        <h3>Oscuridad del Fondo</h3>
+        <div style={{ marginBottom: "20px", padding: "0 10px" }}>
+          <input
+            type="range"
+            min="0"
+            max="0.9"
+            step="0.1"
+            value={dimLevel}
+            onChange={(e) => setDimLevel(parseFloat(e.target.value))}
+            style={{
+              width: "100%",
+              cursor: "pointer",
+              accentColor: "#4CAF50",
+            }}
+          />
+          <div style={{ textAlign: "center", fontSize: "0.8rem", marginTop: "5px", color: "#ccc" }}>{Math.round(dimLevel * 100)}%</div>
+        </div>
+
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "20px" }}>
           <button
             onClick={onOpenGenerator}
@@ -188,6 +262,21 @@ const RightPanel = ({ showMenu, activeVoice, handleVoiceChange, setShowMenu, set
           border-radius: 3px;
         }
       `}</style>
+
+      {/* Modal de advertencia de volumen */}
+      <GameModal
+        isOpen={showVolumeWarning}
+        title="⚠️ Precaución"
+        onConfirm={confirmVolumeChange}
+        onCancel={() => setShowVolumeWarning(false)}
+        confirmText="Entiendo, aumentar"
+        cancelText="Cancelar"
+      >
+        <p style={{ color: "#ffcc80" }}>
+          Aumentar el volumen por encima del 100% puede causar distorsión o ser perjudicial para tus oídos y altavoces.
+        </p>
+        <p>¿Estás seguro de que deseas continuar?</p>
+      </GameModal>
     </div>
   );
 };
@@ -202,6 +291,10 @@ RightPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   setTypeCard: PropTypes.func.isRequired,
   onOpenGenerator: PropTypes.func.isRequired,
+  volumeBoost: PropTypes.number,
+  setVolumeBoost: PropTypes.func,
+  dimLevel: PropTypes.number,
+  setDimLevel: PropTypes.func,
 };
 
 export default RightPanel;
