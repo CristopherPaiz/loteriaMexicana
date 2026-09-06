@@ -76,6 +76,11 @@ export const useModalDismiss = (isOpen, onClose) => {
       const index = stack.indexOf(entry);
       if (index !== -1) stack.splice(index, 1);
 
+      // Si la app navegó mientras el modal se cerraba, nuestra entrada ya no
+      // es la de arriba y retroceder desharía la navegación: el jugador se
+      // quedaba fuera de su cartón justo después de escanear el QR.
+      if (!window.history.state?.lotModal) return;
+
       // Cerrado por la X, por Escape o por un clic fuera: hay que retirar la
       // entrada a mano, o el siguiente "atrás" se gastaría sin hacer nada.
       selfTriggeredBacks += 1;

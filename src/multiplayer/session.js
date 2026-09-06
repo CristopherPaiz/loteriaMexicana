@@ -45,8 +45,14 @@ export const parseRoute = (hash = window.location.hash) => {
   return { name: ROUTES.host };
 };
 
+/**
+ * Ir a otra vista. Se reemplaza la entrada del historial en vez de apilar
+ * una nueva: son saltos de "ahora estás aquí", no pasos que merezca deshacer,
+ * y así el "atrás" no se queda atrapado entre migas sueltas de modales.
+ */
 export const goTo = (path) => {
-  window.location.hash = path;
+  const { origin, pathname, search } = window.location;
+  window.location.replace(`${origin}${pathname}${search}#${path}`);
 };
 
 /** Enlace absoluto para el QR. El código ya lleva cartones y modo dentro. */

@@ -1042,3 +1042,78 @@ button.mp-cell:active {
   min-height: 56px;
   font-size: 0.9rem;
 }
+
+/* ---------- Lector de QR ---------- */
+
+.mp-scan {
+  width: min(400px, 100%);
+}
+
+.mp-scan__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-scan__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--lot-radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.mp-scan__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Marco de puntería: no recorta nada, solo dice dónde apuntar. */
+.mp-scan__reticle {
+  position: absolute;
+  inset: 16%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 14px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35);
+}
+
+/* El campo del código y el botón de escanear comparten fila. */
+.mp-join__row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.mp-join__row .mp-otp {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mp-join__scan {
+  flex: none;
+  width: 62px;
+  border: 1px solid var(--lot-border-strong);
+  border-radius: var(--lot-radius);
+  background: rgba(69, 133, 196, 0.16);
+  color: var(--lot-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.mp-join__scan:hover {
+  background: rgba(69, 133, 196, 0.3);
+  border-color: var(--lot-blue);
+}
+
+.mp-join__scan:active {
+  transform: scale(0.97);
+}
+
+.mp-join__scan:focus-visible {
+  outline: 2px solid var(--lot-amber);
+  outline-offset: 2px;
+}
