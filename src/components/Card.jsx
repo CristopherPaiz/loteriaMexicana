@@ -15,9 +15,12 @@ const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, n
           src={currentImageUrl}
           alt={`Carta ${number}`}
           style={{
+            display: "block",
             width: "100%",
             height: "100%",
-            objectFit: "contain",
+            // El contenedor ya usa la proporción real del archivo; cover evita
+            // franjas por el medio píxel de diferencia entre HD y SD.
+            objectFit: "cover",
             opacity: isPlaying ? (isPaused ? 0.5 : 1) : 1,
           }}
         />

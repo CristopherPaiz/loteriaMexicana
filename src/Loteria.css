@@ -20,30 +20,6 @@
   overflow: hidden;
 }
 
-.reset-button {
-  top: 15px;
-  right: 15px;
-  z-index: 100;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--primary);
-  color: var(--secondary);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
-}
-
-.start-button{
-  border-radius: 35px;
-  /* color green  */
-  background-color: #2a9d8f; 
-  color: var(--secondary);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
-}
-
 .loteria-dynamic-bg {
   position: absolute;
   top: -10%;
@@ -62,12 +38,29 @@
   position: absolute;
   top: 7px;
   right: 7px;
-  width: 70px;
-  height: 70px;
+  width: var(--lot-countdown-size, 70px);
+  height: var(--lot-countdown-size, 70px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100;
+}
+
+.loteria-countdown svg {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-height: 700px) {
+  .loteria-countdown {
+    --lot-countdown-size: 58px;
+  }
+}
+
+@media (max-height: 600px) {
+  .loteria-countdown {
+    --lot-countdown-size: 48px;
+  }
 }
 
 .loteria-countdown .glow-effect {
@@ -79,15 +72,26 @@
   z-index: -1;
 }
 
-/* Estilo del contenedor de carta */
+/* Contenedor de carta: se adapta al hueco disponible manteniendo proporción.
+   Es la primera pieza que cede tamaño cuando la pantalla es baja. */
+/* La proporción es la de los archivos reales (440x700), así el marco queda
+   pegado a la imagen sin franjas. El alto se limita por el hueco disponible,
+   por un tope fijo y por el ancho de pantalla (700/440 invierte la relación);
+   el margen lateral descuenta el padding del panel y el grosor del marco. */
 .loteria-card-container {
   position: relative;
-  width: 180px;
-  height: 290px;
-  margin-bottom: 10px;
+  aspect-ratio: 440 / 700;
+  height: min(100%, 340px, calc((100vw - 32px - var(--lot-frame) * 2) * 700 / 440));
+  width: auto;
+  margin: 0;
   overflow: visible;
   z-index: 5;
-  margin-left: -35px;
+}
+
+@media (max-width: 768px) {
+  .loteria-card-container {
+    height: min(100%, 62dvh, calc((100vw - 32px - var(--lot-frame) * 2) * 700 / 440));
+  }
 }
 
 /* Estilos de la carta en sí */
@@ -146,11 +150,13 @@
   }
 }
 
-/* Estilos para los bordes de carta - separados de la animación */
+/* El marco va como anillo con box-shadow, no como border: así no ocupa espacio
+   de layout ni deforma la caja (sin box-sizing, un border de 20px hacía que la
+   carta midiera 40px más que su contenedor y la imagen quedara despegada). */
 .loteria-card.playing {
-  border: 20px solid white;
+  box-shadow: 0 0 0 var(--lot-frame) #ffffff, 0 12px 28px rgba(0, 0, 0, 0.5);
 }
 
 .loteria-card.paused {
-  border: 20px solid red;
+  box-shadow: 0 0 0 var(--lot-frame) #e63946, 0 12px 28px rgba(0, 0, 0, 0.5);
 }

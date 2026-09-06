@@ -8,6 +8,19 @@ const configuracionDeCartas = {
   27: { repeticiones: { 54: 8 }, total: 432 },
 };
 
+// Tope de reintentos: sin él, una configuración infactible congela la pestaña.
+const MAX_GENERATION_ATTEMPTS = 500;
+
+// Fisher-Yates. `sort(() => Math.random() - 0.5)` no produce una permutación uniforme.
+const shuffle = (array) => {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
+
 const LoteriaCardGenerator = ({ isOpen, onClose }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -30,7 +43,7 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
     const controlTable = {};
 
     const allImageNumbers = Array.from({ length: 54 }, (_, i) => i + 1);
-    const shuffledImageNumbers = allImageNumbers.sort(() => Math.random() - 0.5);
+    const shuffledImageNumbers = shuffle(allImageNumbers);
 
     let currentIndex = 0;
     for (const [count, repetitions] of Object.entries(config.repeticiones)) {
@@ -80,12 +93,17 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
       return card;
     };
 
+    let attempts = 0;
     while (cards.length < numCards) {
       const card = generateCard();
       if (card.length === cardsPerSheet) {
         cards.push(card);
       } else {
         // Si no se pudo generar un cartón válido, reiniciar el proceso
+        attempts++;
+        if (attempts >= MAX_GENERATION_ATTEMPTS) {
+          throw new Error(`No se pudo generar una distribución válida tras ${MAX_GENERATION_ATTEMPTS} intentos.`);
+        }
         imagePool = allImageNumbers.flatMap((num) => Array(controlTable[num]).fill(num));
         cards.length = 0;
         Object.keys(debugInfo).forEach((key) => {

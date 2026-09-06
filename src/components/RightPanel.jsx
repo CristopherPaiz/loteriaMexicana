@@ -1,10 +1,19 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaPrint } from "react-icons/fa";
+
+const TIME_MIN = 3;
+const TIME_MAX = 10;
+const VOLUME_LEVELS = [1.0, 1.5, 2.0];
+const CARD_STYLES = [
+  { value: "HD", label: "HD" },
+  { value: "SD", label: "Clásico" },
+];
 
 const RightPanel = ({
   showMenu,
+  voices,
   activeVoice,
   handleVoiceChange,
   setShowMenu,
@@ -19,243 +28,169 @@ const RightPanel = ({
   setDimLevel = () => {},
 }) => {
   const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   useEffect(() => {
+    if (!showMenu) return undefined;
+
     const handleClickOutside = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target) && showMenu) {
+      if (panelRef.current && !panelRef.current.contains(event.target)) {
         setShowMenu(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setShowMenu(false);
+    };
 
-    // Usamos mousedown para detectar el clic antes de que se procese en otros elementos
+    // mousedown para detectar el clic antes de que lo procesen otros elementos
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    closeButtonRef.current?.focus();
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [setShowMenu, showMenu]);
 
   return (
-    <div ref={panelRef} className={`right-panel ${showMenu ? "show" : ""}`}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          paddingBottom: "20px",
-        }}
+    <>
+      <div className={`lot-panel-backdrop ${showMenu ? "is-open" : ""}`} aria-hidden="true" />
+
+      <aside
+        ref={panelRef}
+        className={`lot-panel ${showMenu ? "is-open" : ""}`}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Ajustes del juego"
+        aria-hidden={!showMenu}
       >
-        <button
-          className="close"
-          onClick={() => setShowMenu(false)}
-          aria-label="Cerrar menú"
-          style={{
-            background: "none",
-            border: "none",
-            color: "white",
-            fontSize: "1.5rem",
-            cursor: "pointer",
-            padding: "5px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <FaTimes />
-        </button>
-      </div>
-
-      <div style={{ marginTop: "10px" }}>
-        <h3>Escoge tipo de voz</h3>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <VoiceButton voice="hombre" activeVoice={activeVoice} onClick={handleVoiceChange} />
-          <VoiceButton voice="mujer" activeVoice={activeVoice} onClick={handleVoiceChange} />
-          <VoiceButton voice="nino" activeVoice={activeVoice} onClick={handleVoiceChange} />
-          <VoiceButton voice="joven" activeVoice={activeVoice} onClick={handleVoiceChange} />
-        </div>
-
-        <p
-          style={{
-            fontSize: "12px",
-            color: "#e0e0e0",
-            margin: "15px 0",
-            padding: "10px",
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            borderRadius: "5px",
-            lineHeight: "1.4",
-          }}
-        >
-          * Para cambio de voz reinicia el juego, o espera dos turnos.
-        </p>
-
-        <h3>Tiempo de cartas</h3>
-
-        <input
-          type="range"
-          min="3"
-          max="10"
-          value={time}
-          onChange={(e) => setTime(parseInt(e.target.value))}
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            accentColor: "#4CAF50",
-            height: "6px",
-            marginBottom: "10px",
-          }}
-        />
-
-        <p
-          style={{
-            color: "#ffffff",
-            textAlign: "center",
-            margin: "0 0 20px 0",
-            fontSize: "16px",
-            fontWeight: "bold",
-          }}
-        >{`${time} segundos`}</p>
-
-        <h3>Tipo de cartas</h3>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            justifyContent: "center",
-            marginBottom: "30px",
-          }}
-        >
-          {["HD", "SD"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setTypeCard(type)}
-              style={{
-                padding: "10px 20px",
-                border: "none",
-                borderRadius: "5px",
-                backgroundColor: typeCard === type ? "#4CAF50" : "rgba(255, 255, 255, 0.15)",
-                color: "white",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                transform: typeCard === type ? "scale(1.05)" : "scale(1)",
-                fontWeight: typeCard === type ? "bold" : "normal",
-                boxShadow: typeCard === type ? "0 2px 4px rgba(0, 0, 0, 0.3)" : "none",
-              }}
-            >
-              {type === "SD" ? "Clásico" : type}
-            </button>
-          ))}
-        </div>
-
-        <h3>Volumen Extra (Precaución)</h3>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "20px" }}>
-          {[1.0, 1.5, 2.0].map((level) => (
-            <button
-              key={level}
-              onClick={() => onVolumeChangeRequest(level)}
-              style={{
-                padding: "8px 12px",
-                border: "none",
-                borderRadius: "5px",
-                backgroundColor: volumeBoost === level ? (level > 1.0 ? "#ff9800" : "#4CAF50") : "rgba(255, 255, 255, 0.15)",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: volumeBoost === level ? "bold" : "normal",
-                flex: 1,
-              }}
-            >
-              {level * 100}%
-            </button>
-          ))}
-        </div>
-
-        <h3>Oscuridad del Fondo</h3>
-        <div style={{ marginBottom: "20px", padding: "0 10px" }}>
-          <input
-            type="range"
-            min="0"
-            max="0.9"
-            step="0.1"
-            value={dimLevel}
-            onChange={(e) => setDimLevel(parseFloat(e.target.value))}
-            style={{
-              width: "100%",
-              cursor: "pointer",
-              accentColor: "#4CAF50",
-            }}
-          />
-          <div style={{ textAlign: "center", fontSize: "0.8rem", marginTop: "5px", color: "#ccc" }}>{Math.round(dimLevel * 100)}%</div>
-        </div>
-
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "20px" }}>
-          <button
-            onClick={onOpenGenerator}
-            style={{
-              width: "100%",
-              padding: "12px",
-              backgroundColor: "#d32f2f",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-              transition: "transform 0.2s, background-color 0.2s",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              fontSize: "14px",
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#b71c1c")}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#d32f2f")}
-          >
-            <span>🖨️</span> Generador de Cartones
+        <header className="lot-panel__header">
+          <div className="lot-panel__heading">
+            <h2 className="lot-panel__title">Ajustes</h2>
+            <span className="lot-panel__subtitle">Voz, ritmo y presentación</span>
+          </div>
+          <button ref={closeButtonRef} type="button" className="lot-panel__close" onClick={() => setShowMenu(false)} aria-label="Cerrar ajustes">
+            <FaTimes />
           </button>
+        </header>
+
+        <div className="lot-panel__body">
+          <section className="lot-section">
+            <div className="lot-section__head">
+              <h3 className="lot-section__title">Voz del gritón</h3>
+            </div>
+
+            <div className="lot-voices">
+              {voices.map((voice) => (
+                <VoiceButton key={voice} voice={voice} activeVoice={activeVoice} onClick={handleVoiceChange} />
+              ))}
+            </div>
+
+            <p className="lot-note">El cambio de voz aplica en la siguiente carta cantada.</p>
+          </section>
+
+          <section className="lot-section">
+            <div className="lot-section__head">
+              <h3 className="lot-section__title">Tiempo por carta</h3>
+              <span className="lot-section__value">{time} s</span>
+            </div>
+
+            <input
+              className="lot-range"
+              type="range"
+              min={TIME_MIN}
+              max={TIME_MAX}
+              step="1"
+              value={time}
+              onChange={(e) => setTime(parseInt(e.target.value, 10))}
+              aria-label="Segundos entre cartas"
+            />
+            <div className="lot-range-scale">
+              <span>{TIME_MIN}s</span>
+              <span>{TIME_MAX}s</span>
+            </div>
+          </section>
+
+          <section className="lot-section">
+            <div className="lot-section__head">
+              <h3 className="lot-section__title">Estilo de cartas</h3>
+            </div>
+
+            <div className="lot-segmented" role="group" aria-label="Estilo de cartas">
+              {CARD_STYLES.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`lot-segmented__option ${typeCard === value ? "is-active" : ""}`}
+                  onClick={() => setTypeCard(value)}
+                  aria-pressed={typeCard === value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="lot-section">
+            <div className="lot-section__head">
+              <h3 className="lot-section__title">Volumen extra</h3>
+              <span className="lot-section__value">{Math.round(volumeBoost * 100)}%</span>
+            </div>
+
+            <div className="lot-segmented lot-segmented--warn" role="group" aria-label="Volumen extra">
+              {VOLUME_LEVELS.map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`lot-segmented__option ${volumeBoost === level ? "is-active" : ""}`}
+                  onClick={() => onVolumeChangeRequest(level)}
+                  aria-pressed={volumeBoost === level}
+                >
+                  {level * 100}%
+                </button>
+              ))}
+            </div>
+
+            <p className="lot-note lot-note--warn">Arriba del 100% puede distorsionar el audio y dañar tus altavoces.</p>
+          </section>
+
+          <section className="lot-section">
+            <div className="lot-section__head">
+              <h3 className="lot-section__title">Oscuridad del fondo</h3>
+              <span className="lot-section__value">{Math.round(dimLevel * 100)}%</span>
+            </div>
+
+            <input
+              className="lot-range"
+              type="range"
+              min="0"
+              max="0.9"
+              step="0.1"
+              value={dimLevel}
+              onChange={(e) => setDimLevel(parseFloat(e.target.value))}
+              aria-label="Oscuridad del fondo"
+            />
+            <div className="lot-range-scale">
+              <span>Claro</span>
+              <span>Oscuro</span>
+            </div>
+          </section>
         </div>
-      </div>
 
-      <style>{`
-        .right-panel {
-          background-color: #1a1d24 !important; /* Fondo oscuro para mejor contraste */
-          box-shadow: -5px 0 25px rgba(0,0,0,0.7);
-          color: #f0f0f0;
-          overflow-y: auto; /* Permitir scroll si el contenido es alto */
-          width: 300px; /* Ancho por defecto en desktop */
-        }
-
-        @media (max-width: 768px) {
-          .right-panel {
-            width: 80% !important; /* Ocupar todo el ancho en mobile */
-          }
-        }
-
-        .right-panel h3 {
-          color: #ffffff;
-          border-bottom: 2px solid #4CAF50;
-          padding-bottom: 5px;
-          margin-bottom: 15px;
-          margin-top: 20px;
-          font-size: 1.1rem;
-          letter-spacing: 0.5px;
-        }
-        /* Scrollbar styling */
-        .right-panel::-webkit-scrollbar {
-          width: 6px;
-        }
-        .right-panel::-webkit-scrollbar-track {
-          background: rgba(0,0,0,0.1);
-        }
-        .right-panel::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.2);
-          border-radius: 3px;
-        }
-      `}</style>
-    </div>
+        <footer className="lot-panel__footer">
+          <button type="button" className="lot-btn lot-btn--danger lot-btn--block" onClick={onOpenGenerator}>
+            <FaPrint /> Generador de cartones
+          </button>
+        </footer>
+      </aside>
+    </>
   );
 };
 
 RightPanel.propTypes = {
   showMenu: PropTypes.bool.isRequired,
+  voices: PropTypes.arrayOf(PropTypes.string).isRequired,
   activeVoice: PropTypes.string.isRequired,
   handleVoiceChange: PropTypes.func.isRequired,
   setShowMenu: PropTypes.func.isRequired,

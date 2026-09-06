@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import TopPanel from "./components/TopPanel";
 import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
@@ -15,8 +15,25 @@ const CARD_LENGTH = 54;
 const CARD_SHOW_TOP_MOBILE = 5;
 const CARD_SHOW_TOP_DESKTOP = 10;
 const PRELOAD_TIME = 1; // Tiempo en segundos para precargar la siguiente imagen
-const isMobile = window.innerWidth <= 768;
+const MOBILE_BREAKPOINT = 768;
 const STORAGE_KEY = "loteria_game_state";
+const SETTINGS_KEY = "loteria_settings";
+const VOICES = ["hombre", "mujer", "nino", "joven"];
+const DEFAULT_VOICE = "mujer";
+
+const cardImageUrls = (type) => Array.from({ length: CARD_LENGTH }, (_, i) => `/${type}WEBP/${i + 1}.webp`);
+const voiceSoundUrls = (voice) => Array.from({ length: CARD_LENGTH }, (_, i) => `/sounds/${voice}/${i + 1}. ${voice}.mp3`);
+
+const BASE_SOUNDS = [
+  "/sounds/sounds/0. barajar.mp3",
+  "/sounds/sounds/0. cambio carta.mp3",
+  "/sounds/sounds/0. play.mp3",
+  "/sounds/sounds/0. pause.mp3",
+  `/sounds/${DEFAULT_VOICE}/1. ${DEFAULT_VOICE} apertura.mp3`,
+];
+
+// Assets mínimos para poder jugar: imágenes del estilo inicial + voz por defecto.
+const generateAssets = (type) => [...cardImageUrls(type), ...BASE_SOUNDS, ...voiceSoundUrls(DEFAULT_VOICE)];
 
 const Loteria = () => {
   const [currentCard, setCurrentCard] = useState(1);
@@ -24,20 +41,20 @@ const Loteria = () => {
   const [deck, setDeck] = useState([]);
   const [pastCards, setPastCards] = useState([]);
   const [pastCardsAll, setPastCardsAll] = useState([]);
-  const voice = ["hombre", "mujer", "nino", "joven"];
-  const [activeVoice, setActiveVoice] = useState(voice[1]);
+  const [activeVoice, setActiveVoice] = useState(DEFAULT_VOICE);
   const [showMenu, setShowMenu] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   const audioRef = useRef(null);
   const timerRef = useRef(null);
-  const changeSoundTimerRef = useRef(null);
 
-  // Refs para el temporizador preciso
-  const startTimeRef = useRef(null);
-  const remainingTimeRef = useRef(null);
+  // Temporizador basado en reloj de pared: una sola fuente de verdad.
+  const deadlineRef = useRef(null); // timestamp en el que sale la próxima carta
+  const remainingMsRef = useRef(null); // ms pendientes cuando el juego está pausado
 
-  // Eliminamos soundQueueRef y isPlayingAudioRef para evitar colas
+  // Espejo del mazo para la lógica de timers (evita closures obsoletos y mutar el estado).
+  const deckRef = useRef([]);
+
   const [time, setTime] = useState(TIME_BETWEEN_CARDS);
   const [typeCard, setTypeCard] = useState(INITIAL_CARD_STYLE);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -51,14 +68,24 @@ const Loteria = () => {
   const [assetCache, setAssetCache] = useState({});
   const [volumeBoost, setVolumeBoost] = useState(1.0);
   const [dimLevel, setDimLevel] = useState(0.5);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_BREAKPOINT);
 
-  // Estados para modales
+  // Espejo del caché para leerlo desde timers y para revocar los blobs al desmontar.
+  const assetCacheRef = useRef({});
+
   // Estados para modales
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [showResumeConfirm, setShowResumeConfirm] = useState(false);
   const [showVolumeWarning, setShowVolumeWarning] = useState(false);
   const [pendingVolume, setPendingVolume] = useState(null);
   const [savedGameState, setSavedGameState] = useState(null);
+
+  // Audio Context Refs
+  const audioContextRef = useRef(null);
+  const gainNodeRef = useRef(null);
+  const sourceNodeRef = useRef(null);
+
+  const [assetsToLoad] = useState(() => generateAssets(INITIAL_CARD_STYLE));
 
   const handleVolumeChangeRequest = (level) => {
     if (level > 1.0 && level > volumeBoost) {
@@ -77,38 +104,43 @@ const Loteria = () => {
     setShowVolumeWarning(false);
   };
 
-  // Audio Context Refs
-  const audioContextRef = useRef(null);
-  const gainNodeRef = useRef(null);
-  const sourceNodeRef = useRef(null);
-
-  // Función auxiliar para generar lista de assets
-  const generateAssets = (type) => {
-    const images = Array.from({ length: CARD_LENGTH }, (_, i) => `/${type}WEBP/${i + 1}.webp`);
-    const sounds = [
-      "/sounds/sounds/0. barajar.mp3",
-      "/sounds/sounds/0. cambio carta.mp3",
-      "/sounds/sounds/0. play.mp3",
-      "/sounds/sounds/0. pause.mp3",
-      "/sounds/mujer/1. mujer apertura.mp3",
-    ];
-    // Agregar audios de voz (mujer por defecto)
-    const voiceSounds = Array.from({ length: CARD_LENGTH }, (_, i) => `/sounds/mujer/${i + 1}. mujer.mp3`);
-
-    return [...images, ...sounds, ...voiceSounds];
-  };
-
-  const [assetsToLoad, setAssetsToLoad] = useState(() => generateAssets(INITIAL_CARD_STYLE));
-
+  // Detectar cambios de tamaño / rotación en vez de congelar el valor al importar el módulo.
   useEffect(() => {
-    // Actualizar assets si cambia el tipo de carta, pero no forzar recarga completa si ya inició
-    setAssetsToLoad(generateAssets(typeCard));
-  }, [typeCard]);
+    const onResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  // Descarga en segundo plano los assets que no entraron en la precarga inicial
+  // (otras voces, el otro estilo de cartas) y los guarda como blobs en el caché.
+  const cacheAssets = useCallback(async (urls) => {
+    const missing = urls.filter((url) => !assetCacheRef.current[url]);
+    if (missing.length === 0) return;
+
+    let added = false;
+    for (const url of missing) {
+      if (assetCacheRef.current[url]) continue;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const blob = await response.blob();
+        assetCacheRef.current[url] = URL.createObjectURL(blob);
+        added = true;
+      } catch (error) {
+        console.error(`No se pudo cachear el asset: ${url}`, error);
+      }
+    }
+    if (added) setAssetCache({ ...assetCacheRef.current });
+  }, []);
 
   // Cargar juego y configuraciones guardadas al inicio
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    const savedSettings = localStorage.getItem("loteria_settings");
+    const savedSettings = localStorage.getItem(SETTINGS_KEY);
 
     if (savedSettings) {
       try {
@@ -139,26 +171,206 @@ const Loteria = () => {
 
   // Guardar configuraciones cuando cambian
   useEffect(() => {
-    localStorage.setItem("loteria_settings", JSON.stringify({ volumeBoost, dimLevel }));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ volumeBoost, dimLevel }));
   }, [volumeBoost, dimLevel]);
 
-  // Inicializar AudioContext
-  useEffect(() => {
+  // Grafo de audio: se crea perezosamente en el primer gesto del usuario.
+  // Nunca se cierra el AudioContext: createMediaElementSource() solo puede llamarse
+  // una vez por elemento <audio>, así que un context cerrado dejaría el audio mudo
+  // (p. ej. con el doble montaje de StrictMode en desarrollo). Se suspende y ya.
+  const ensureAudioGraph = useCallback(() => {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor || !audioRef.current) return;
+
     if (!audioContextRef.current) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioContextRef.current = new AudioContext();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      gainNodeRef.current.connect(audioContextRef.current.destination);
+      try {
+        audioContextRef.current = new AudioContextCtor();
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.gain.value = volumeBoost;
+        gainNodeRef.current.connect(audioContextRef.current.destination);
+      } catch (error) {
+        console.error("No se pudo crear el AudioContext:", error);
+        audioContextRef.current = null;
+        return;
+      }
     }
-    // Actualizar ganancia
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = volumeBoost;
+
+    if (audioContextRef.current.state === "suspended") {
+      audioContextRef.current.resume().catch(() => {});
+    }
+
+    if (!sourceNodeRef.current && gainNodeRef.current) {
+      try {
+        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        sourceNodeRef.current.connect(gainNodeRef.current);
+      } catch (error) {
+        // El elemento ya estaba enrutado por otro source: se reproduce sin boost.
+        console.error("No se pudo enrutar el audio por el AudioContext:", error);
+      }
     }
   }, [volumeBoost]);
+
+  useEffect(() => {
+    if (gainNodeRef.current) gainNodeRef.current.gain.value = volumeBoost;
+  }, [volumeBoost]);
+
+  const shuffleDeck = useCallback((deckToShuffle) => {
+    const shuffled = [...deckToShuffle];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
+
+  const initializeDeck = useCallback(() => Array.from({ length: CARD_LENGTH }, (_, i) => i + 1), []);
+
+  const applyDeck = useCallback((nextDeck) => {
+    deckRef.current = nextDeck;
+    setDeck(nextDeck);
+  }, []);
+
+  // Reproduce audio inmediatamente, cortando el anterior.
+  const playAudioImmediate = useCallback(
+    (src, callback) => {
+      if (!audioRef.current) return;
+      ensureAudioGraph();
+
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = assetCacheRef.current[src] || src;
+
+      const handleEnded = () => {
+        audioRef.current?.removeEventListener("ended", handleEnded);
+        if (callback) callback();
+      };
+      audioRef.current.addEventListener("ended", handleEnded);
+
+      audioRef.current.play().catch((err) => {
+        console.error("Error al reproducir audio:", err);
+        audioRef.current?.removeEventListener("ended", handleEnded);
+        // Si falla, ejecutamos el callback de todos modos para no detener la lógica
+        if (callback) callback();
+      });
+    },
+    [ensureAudioGraph]
+  );
+
+  useEffect(() => {
+    // Solo inicializar deck si no estamos reanudando un juego
+    if (!showResumeConfirm && !savedGameState) {
+      applyDeck(shuffleDeck(initializeDeck()));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Liberar los blobs del caché al desmontar (se crea uno por asset precargado).
+  useEffect(() => {
+    const cache = assetCacheRef.current;
+    const audioEl = audioRef.current;
+    return () => {
+      clearTimeout(timerRef.current);
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.removeAttribute("src");
+      }
+      Object.values(cache).forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      audioContextRef.current?.suspend?.().catch(() => {});
+    };
+  }, []);
+
+  const preloadImage = useCallback(
+    (cardNumber) => {
+      const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
+      const cached = assetCacheRef.current[imageUrl];
+      if (cached) {
+        setNextImageUrl(cached);
+        setIsImageLoaded(true);
+        return;
+      }
+
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => {
+        setIsImageLoaded(true);
+        setNextImageUrl(imageUrl);
+      };
+      img.onerror = () => setIsImageLoaded(false);
+    },
+    [typeCard]
+  );
+
+  const drawNextCard = useCallback(() => {
+    clearTimeout(timerRef.current);
+    deadlineRef.current = null;
+    remainingMsRef.current = null;
+
+    const remaining = [...deckRef.current];
+    if (remaining.length === 0) {
+      setIsPlaying(false);
+      setGameOver(true);
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+
+    const newCard = remaining.pop();
+    applyDeck(remaining);
+
+    // Actualización visual INMEDIATA
+    setCurrentCard(newCard);
+    setIsImageLoaded(false);
+    setDisplayedCard(newCard);
+    setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
+    setPastCardsAll((prev) => [newCard, ...prev]);
+    setCountdown(time);
+
+    // Reproducir sonido inmediatamente (corta el anterior)
+    playAudioImmediate(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
+  }, [activeVoice, applyDeck, isMobile, playAudioImmediate, time]);
+
+  // Programación de la siguiente carta + precarga de su imagen.
+  useEffect(() => {
+    if (!isPlaying || isPaused) return undefined;
+
+    const duration = remainingMsRef.current ?? time * 1000;
+    deadlineRef.current = Date.now() + duration;
+
+    timerRef.current = setTimeout(drawNextCard, duration);
+
+    const preloadTimer = setTimeout(() => {
+      if (deckRef.current.length > 0) preloadImage(deckRef.current[deckRef.current.length - 1]);
+    }, Math.max(0, duration - PRELOAD_TIME * 1000));
+
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(preloadTimer);
+      // Si el efecto se cancela sin haber sacado carta (pausa, cambio de voz…),
+      // guardamos lo que quedaba para reanudar exactamente donde iba.
+      if (deadlineRef.current) {
+        remainingMsRef.current = Math.max(0, deadlineRef.current - Date.now());
+        deadlineRef.current = null;
+      }
+    };
+  }, [isPlaying, isPaused, currentCard, time, drawNextCard, preloadImage]);
+
+  // Cuenta regresiva visual derivada del reloj de pared (sin descontar a mano).
+  useEffect(() => {
+    if (!isPlaying || isPaused) return undefined;
+
+    const tick = () => {
+      if (!deadlineRef.current) return;
+      setCountdown(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)));
+    };
+
+    tick();
+    const intervalId = setInterval(tick, 250);
+    return () => clearInterval(intervalId);
+  }, [isPlaying, isPaused, currentCard]);
 
   // Guardar estado del juego
   useEffect(() => {
     if (isPlaying && deck.length > 0) {
+      const remainingTime = remainingMsRef.current ?? (deadlineRef.current ? Math.max(0, deadlineRef.current - Date.now()) : time * 1000);
       const stateToSave = {
         currentCard,
         deck,
@@ -167,178 +379,50 @@ const Loteria = () => {
         displayedCard,
         time,
         typeCard,
+        activeVoice,
         isPlaying,
         isPaused: true, // Siempre guardar como pausado para que no arranque solo
-        remainingTime: remainingTimeRef.current || time * 1000, // Guardar tiempo restante aproximado
+        remainingTime,
         gameOver,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } else if (!isPlaying && !isLoading && !showResumeConfirm) {
       // Limpiar si el juego terminó o se detuvo manualmente (y no estamos en el modal de resume)
-      // Pero cuidado de no borrarlo mientras decidimos si reanudar
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, [currentCard, deck, pastCards, pastCardsAll, displayedCard, time, typeCard, isPlaying, gameOver, isLoading, showResumeConfirm]);
+  }, [
+    currentCard,
+    deck,
+    pastCards,
+    pastCardsAll,
+    displayedCard,
+    time,
+    typeCard,
+    activeVoice,
+    isPlaying,
+    gameOver,
+    isLoading,
+    showResumeConfirm,
+  ]);
 
-  const initializeDeck = () => {
-    return Array.from({ length: CARD_LENGTH }, (_, i) => i + 1);
-  };
-
-  const shuffleDeck = (deckToShuffle) => {
-    for (let i = deckToShuffle.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deckToShuffle[i], deckToShuffle[j]] = [deckToShuffle[j], deckToShuffle[i]];
-    }
-    return deckToShuffle;
-  };
-
-  // Función para reproducir audio inmediatamente, cortando el anterior
-  const playAudioImmediate = (src, callback) => {
-    if (audioRef.current) {
-      // Resume AudioContext if suspended (browser policy)
-      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume();
-      }
-
-      // Desconectar nodo anterior si existe
-      if (sourceNodeRef.current) {
-        // sourceNodeRef.current.disconnect(); // No es estrictamente necesario si el elemento de audio cambia
-      }
-
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-
-      // Usar blob URL si existe en caché, sino usar src original
-      const audioSrc = assetCache[src] || src;
-      audioRef.current.src = audioSrc;
-
-      // Conectar elemento de audio al nodo de ganancia si no está conectado
-      if (!sourceNodeRef.current && audioContextRef.current && gainNodeRef.current) {
-        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
-        sourceNodeRef.current.connect(gainNodeRef.current);
-      }
-
-      const handleEnded = () => {
-        if (callback) callback();
-        audioRef.current.removeEventListener("ended", handleEnded);
-      };
-
-      audioRef.current.addEventListener("ended", handleEnded);
-
-      audioRef.current.play().catch((err) => {
-        console.error("Error al reproducir audio:", err);
-        // Si falla, ejecutamos el callback de todos modos para no detener la lógica
-        if (callback) callback();
-      });
-    }
-  };
-
+  // Cachear en segundo plano la voz activa (al inicio solo se precarga la de defecto).
   useEffect(() => {
-    // Solo inicializar deck si no estamos reanudando un juego
-    if (!showResumeConfirm && !savedGameState) {
-      const shuffledDeck = shuffleDeck(initializeDeck());
-      setDeck(shuffledDeck);
-    }
+    if (isLoading) return;
+    cacheAssets(voiceSoundUrls(activeVoice));
+  }, [activeVoice, cacheAssets, isLoading]);
 
-    // Limpiar todo al desmontar el componente
-    return () => {
-      clearTimeout(timerRef.current);
-      clearTimeout(changeSoundTimerRef.current);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
+  // Cachear en segundo plano el estilo de cartas seleccionado (HD ⇄ SD).
   useEffect(() => {
-    if (isPlaying && !isPaused) {
-      // Si no hay tiempo restante guardado, usar el tiempo completo
-      const duration = remainingTimeRef.current !== null ? remainingTimeRef.current : time * 1000;
-
-      startTimeRef.current = Date.now();
-
-      // Programar el próximo cambio de carta
-      timerRef.current = setTimeout(() => {
-        remainingTimeRef.current = null; // Resetear tiempo restante al completar
-        drawNextCard();
-      }, duration);
-
-      // Programar la precarga de la siguiente imagen (ajustado al tiempo restante)
-      const preloadDelay = Math.max(0, duration - PRELOAD_TIME * 1000);
-      const preloadTimer = setTimeout(() => {
-        if (deck.length > 0) {
-          const nextCardNumber = deck[deck.length - 1];
-          preloadImage(nextCardNumber);
-        }
-      }, preloadDelay);
-
-      return () => {
-        clearTimeout(timerRef.current);
-        clearTimeout(preloadTimer);
-      };
-    } else {
-      // Al pausar, calcular y guardar el tiempo restante
-      if (startTimeRef.current && isPlaying) {
-        const elapsed = Date.now() - startTimeRef.current;
-        const currentRemaining = (remainingTimeRef.current !== null ? remainingTimeRef.current : time * 1000) - elapsed;
-        remainingTimeRef.current = Math.max(0, currentRemaining);
-      }
-      clearTimeout(timerRef.current);
-    }
-  }, [isPlaying, isPaused, currentCard, deck, time, typeCard]);
-
-  useEffect(() => {
-    let intervalId;
-    if (isPlaying && !isPaused && countdown > 0) {
-      // Sincronizar el countdown visual con el tiempo restante real si existe
-      if (remainingTimeRef.current) {
-        setCountdown(Math.ceil(remainingTimeRef.current / 1000));
-      }
-
-      intervalId = setInterval(() => {
-        setCountdown((prev) => {
-          const newVal = prev - 1;
-          // Actualizar remainingTimeRef para mantener sincronía aproximada
-          if (remainingTimeRef.current) {
-            remainingTimeRef.current -= 1000;
-          }
-          return newVal;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(intervalId);
-  }, [isPlaying, isPaused, countdown]);
-
-  const preloadImage = (cardNumber) => {
-    const imageUrl = `/${typeCard}WEBP/${cardNumber}.webp`;
-    // Si ya tenemos el blob en caché, no necesitamos precargar con Image()
-    if (assetCache[imageUrl]) {
-      setNextImageUrl(assetCache[imageUrl]);
-      setIsImageLoaded(true);
-      return;
-    }
-
-    const img = new Image();
-    img.src = imageUrl;
-    img.onload = () => {
-      setIsImageLoaded(true);
-      setNextImageUrl(imageUrl);
-    };
-    img.onerror = () => setIsImageLoaded(false);
-  };
+    if (isLoading) return;
+    cacheAssets(cardImageUrls(typeCard));
+  }, [typeCard, cacheAssets, isLoading]);
 
   const startGame = () => {
-    // Limpiar temporizadores
     clearTimeout(timerRef.current);
-    clearTimeout(changeSoundTimerRef.current);
-    remainingTimeRef.current = null; // Resetear tiempo restante
+    deadlineRef.current = null;
+    remainingMsRef.current = null;
 
-    const shuffledDeck = shuffleDeck(initializeDeck());
-    setDeck(shuffledDeck);
+    applyDeck(shuffleDeck(initializeDeck()));
     setIsPlaying(true);
     setIsPaused(false);
     setPastCards([]);
@@ -348,61 +432,37 @@ const Loteria = () => {
     setCurrentCard(1); // Reset visual to first card
     setDisplayedCard(null); // Reset background to gradient
 
-    // Secuencia de inicio: Barajar -> Mujer Apertura -> Iniciar juego
+    // Secuencia de inicio: Barajar -> Apertura -> Iniciar juego
     playAudioImmediate("/sounds/sounds/0. barajar.mp3", () => {
       if (!isReset && time >= 4) {
-        playAudioImmediate(`/sounds/mujer/1. mujer apertura.mp3`);
+        playAudioImmediate(`/sounds/${DEFAULT_VOICE}/1. ${DEFAULT_VOICE} apertura.mp3`);
       }
     });
   };
 
   const resumeSavedGame = () => {
-    if (savedGameState) {
-      setDeck(savedGameState.deck);
-      setCurrentCard(savedGameState.currentCard);
-      setPastCards(savedGameState.pastCards);
-      setPastCardsAll(savedGameState.pastCardsAll);
-      setDisplayedCard(savedGameState.displayedCard);
-      setTime(savedGameState.time);
-      setTypeCard(savedGameState.typeCard);
-      setGameOver(savedGameState.gameOver);
+    if (!savedGameState) return;
 
-      // Restaurar tiempo restante
-      remainingTimeRef.current = savedGameState.remainingTime;
-      setCountdown(Math.ceil(savedGameState.remainingTime / 1000));
+    applyDeck(savedGameState.deck);
+    setCurrentCard(savedGameState.currentCard);
+    setPastCards(savedGameState.pastCards);
+    setPastCardsAll(savedGameState.pastCardsAll);
+    setDisplayedCard(savedGameState.displayedCard);
+    setTime(savedGameState.time);
+    setTypeCard(savedGameState.typeCard);
+    if (savedGameState.activeVoice) setActiveVoice(savedGameState.activeVoice);
+    setGameOver(savedGameState.gameOver);
 
-      setIsPlaying(true);
-      setIsPaused(true); // Reanudar en pausa para que el usuario decida cuándo seguir
+    // Restaurar tiempo restante
+    remainingMsRef.current = savedGameState.remainingTime ?? savedGameState.time * 1000;
+    deadlineRef.current = null;
+    setCountdown(Math.ceil(remainingMsRef.current / 1000));
 
-      setShowResumeConfirm(false);
-      setSavedGameState(null);
-    }
-  };
+    setIsPlaying(true);
+    setIsPaused(true); // Reanudar en pausa para que el usuario decida cuándo seguir
 
-  const drawNextCard = () => {
-    // Cancelar cualquier temporizador pendiente
-    clearTimeout(timerRef.current);
-    remainingTimeRef.current = null; // Resetear tiempo restante para la nueva carta
-
-    if (deck.length > 0) {
-      const newCard = deck.pop();
-
-      // Actualización visual INMEDIATA
-      setCurrentCard(newCard);
-      setDeck([...deck]);
-      setIsImageLoaded(false);
-      setDisplayedCard(newCard);
-      setPastCards((prev) => [newCard, ...prev].slice(0, isMobile ? CARD_SHOW_TOP_MOBILE : CARD_SHOW_TOP_DESKTOP));
-      setPastCardsAll((prev) => [newCard, ...prev]);
-      setCountdown(time);
-
-      // Reproducir sonido inmediatamente (corta el anterior)
-      playAudioImmediate(`/sounds/${activeVoice}/${newCard}. ${activeVoice}.mp3`);
-    } else {
-      setIsPlaying(false);
-      setGameOver(true);
-      localStorage.removeItem(STORAGE_KEY); // Limpiar guardado al terminar
-    }
+    setShowResumeConfirm(false);
+    setSavedGameState(null);
   };
 
   const playSound = (soundName) => {
@@ -440,19 +500,20 @@ const Loteria = () => {
     setIsPlaying(false);
     setIsPaused(false);
     clearTimeout(timerRef.current);
-    clearTimeout(changeSoundTimerRef.current);
-    remainingTimeRef.current = null;
+    deadlineRef.current = null;
+    remainingMsRef.current = null;
 
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    setDeck(shuffleDeck(initializeDeck()));
+    applyDeck(shuffleDeck(initializeDeck()));
     setPastCards([]);
     setPastCardsAll([]);
     setCurrentCard(1);
     setIsImageLoaded(false);
     setNextImageUrl("");
+    setDisplayedCard(null);
     setGameOver(false);
     localStorage.removeItem(STORAGE_KEY);
     setShowStopConfirm(false);
@@ -471,7 +532,10 @@ const Loteria = () => {
         <LoadingScreen
           assets={assetsToLoad}
           onComplete={(cache) => {
-            setAssetCache(cache);
+            // Mutamos el objeto en sitio: el cleanup de desmontaje guarda esta
+            // misma referencia para revocar los blobs.
+            Object.assign(assetCacheRef.current, cache);
+            setAssetCache({ ...assetCacheRef.current });
             setIsLoading(false);
           }}
         />
@@ -481,11 +545,22 @@ const Loteria = () => {
         <div
           className="loteria-dynamic-bg"
           style={{
-            backgroundImage: displayedCard ? `url(${getCardImageUrl(displayedCard)})` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%);",
+            backgroundImage: displayedCard ? `url(${getCardImageUrl(displayedCard)})` : "linear-gradient(135deg, #2b2f3a 0%, #3b4858 100%)",
             opacity: dimLevel, // Aplicar nivel de dim
           }}
         />
       </div>
+
+      {/* Cabecera en flujo normal: título arriba, contador debajo y las
+          minicartas al final. Nada se superpone. */}
+      <header className="loteria-header">
+        <h1 className="title">Lotería Mexicana</h1>
+        {pastCardsAll.length > 0 && (
+          <div className="loteria-progress-pill">
+            {pastCardsAll.length} / {CARD_LENGTH} · quedan {deck.length}
+          </div>
+        )}
+      </header>
 
       <TopPanel
         pastCards={pastCards}
@@ -494,17 +569,11 @@ const Loteria = () => {
         pastCardsAll={pastCardsAll}
         getCardImageUrl={getCardImageUrl}
       />
-      {isMobile && <h1 className="title">Lotería Mexicana</h1>}
-      {pastCardsAll.length > 0 && (
-        <div style={{ textAlign: "center", fontSize: 15, position: "absolute", left: "0", top: "10px", right: "0", zIndex: 10 }}>
-          {pastCardsAll.length} / 54 (quedan {deck.length} cartas)
-        </div>
-      )}
-      {!isMobile && !isPlaying && <h1 className="title">Lotería Mexicana</h1>}
       {gameOver ? (
         <div className="game-over">
           <h2>Se han acabado todas las cartas</h2>
           <button
+            className="lot-btn lot-btn--start"
             onClick={() => {
               setIsReset(true);
               startGame();
@@ -515,7 +584,7 @@ const Loteria = () => {
         </div>
       ) : (
         <>
-          <div style={{ position: "relative" }}>
+          <div className="loteria-stage">
             <MainPanel
               currentCard={currentCard}
               togglePlay={togglePlay}
@@ -533,11 +602,10 @@ const Loteria = () => {
             {/* Contador como componente independiente */}
             {isPlaying && !isPaused && <CountdownTimer countdown={countdown} totalTime={time} />}
           </div>
-          <p></p>
-          <p></p>
 
           <RightPanel
             showMenu={showMenu}
+            voices={VOICES}
             activeVoice={activeVoice}
             handleVoiceChange={handleVoiceChange}
             setShowMenu={setShowMenu}
@@ -614,9 +682,6 @@ const Loteria = () => {
         </p>
         <p>¿Estás seguro de que deseas continuar?</p>
       </GameModal>
-
-      <p></p>
-      <p></p>
     </div>
   );
 };

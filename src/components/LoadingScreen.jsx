@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 
 const LoadingScreen = ({ onComplete, assets }) => {
+  // onComplete suele venir como arrow inline: lo guardamos en un ref para que
+  // cambiar de identidad no reinicie la precarga entera.
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
   const [progress, setProgress] = useState(0);
   const [loadingText, setLoadingText] = useState("Preparando la Lotería...");
 
@@ -27,11 +32,13 @@ const LoadingScreen = ({ onComplete, assets }) => {
 
   useEffect(() => {
     if (!assets || assets.length === 0) {
-      onComplete();
-      return;
+      onCompleteRef.current({});
+      return undefined;
     }
 
     let isMounted = true;
+    let handedOver = false;
+    let finishTimer = null;
     let loaded = 0;
     const cache = {};
     const total = assets.length;
@@ -40,8 +47,7 @@ const LoadingScreen = ({ onComplete, assets }) => {
       try {
         const response = await fetch(src);
         const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        cache[src] = blobUrl;
+        cache[src] = URL.createObjectURL(blob);
         return src;
       } catch (error) {
         console.error(`Failed to load asset: ${src}`, error);
@@ -68,7 +74,10 @@ const LoadingScreen = ({ onComplete, assets }) => {
       }
       if (isMounted) {
         // Small delay to show 100%
-        setTimeout(() => onComplete(cache), 800);
+        finishTimer = setTimeout(() => {
+          handedOver = true; // el caché pasa a ser propiedad del padre
+          onCompleteRef.current(cache);
+        }, 800);
       }
     };
 
@@ -76,8 +85,14 @@ const LoadingScreen = ({ onComplete, assets }) => {
 
     return () => {
       isMounted = false;
+      clearTimeout(finishTimer);
+      // Si nos desmontamos antes de entregar el caché, los blobs ya creados
+      // no los va a liberar nadie más.
+      if (!handedOver) {
+        Object.values(cache).forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      }
     };
-  }, [assets, onComplete]);
+  }, [assets]);
 
   return (
     <div className="loading-screen">

@@ -16,8 +16,8 @@ const MainPanel = ({
   currentImageUrl,
 }) => (
   <div className="main-panel">
-    {/* Contenedor con posición relativa para el Card */}
-    <div style={{ position: "relative", marginBottom: "20px" }}>
+    {/* Hueco elástico: la carta se queda con el espacio sobrante */}
+    <div className="lot-card-slot">
       <Card
         number={currentCard}
         onClick={togglePlay}
@@ -30,92 +30,27 @@ const MainPanel = ({
       />
     </div>
 
-    <p
-      style={{
-        textAlign: "center",
-        margin: "10px 0",
-        fontSize: "14px",
-        opacity: 0.8,
-        color: "white",
-      }}
-    >
-      * Toca la carta para {isPlaying ? (isPaused ? "reanudar" : "pausar") : "comenzar"}
-    </p>
+    <p className="lot-hint">Toca la carta para {isPlaying ? (isPaused ? "reanudar" : "pausar") : "comenzar"}</p>
 
-    <div
-      style={{
-        width: "100%",
-        maxWidth: "300px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        marginTop: "10px",
-      }}
-    >
+    <div className="lot-actions">
       {isPlaying ? (
         <>
-          <button
-            style={{
-              backgroundColor: "#2196F3",
-              color: "white",
-              borderRadius: "30px",
-              padding: "12px 20px",
-              border: "none",
-              fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: isPaused ? "not-allowed" : "pointer",
-              opacity: isPaused ? 0.7 : 1,
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              transition: "all 0.3s",
-            }}
-            onClick={drawNextCard}
-            disabled={isPaused}
-          >
-            <FaForward style={{ marginRight: "8px" }} /> Siguiente carta
+          <button type="button" className="lot-btn lot-btn--next" onClick={drawNextCard} disabled={isPaused}>
+            <FaForward />
+            <span className="lot-btn__label">Siguiente carta</span>
           </button>
 
-          <button
-            style={{
-              backgroundColor: "#F44336",
-              color: "white",
-              borderRadius: "30px",
-              padding: "12px 20px",
-              border: "none",
-              fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-              transition: "all 0.3s",
-            }}
-            onClick={stopGame}
-          >
-            <FaUndo style={{ marginRight: "8px" }} /> Reiniciar juego
+          {/* En pantallas bajas este botón se queda solo con el icono: el
+              aria-label mantiene el nombre accesible. */}
+          <button type="button" className="lot-btn lot-btn--danger" onClick={stopGame} aria-label="Reiniciar juego">
+            <FaUndo />
+            <span className="lot-btn__label">Reiniciar juego</span>
           </button>
         </>
       ) : (
-        <button
-          style={{
-            backgroundColor: "#4CAF50",
-            color: "white",
-            borderRadius: "30px",
-            padding: "12px 20px",
-            border: "none",
-            fontWeight: "bold",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            transition: "all 0.3s",
-            animation: "pulse 1.5s infinite",
-          }}
-          onClick={startGame}
-        >
-          <FaPlay style={{ marginRight: "8px" }} /> Iniciar juego
+        <button type="button" className="lot-btn lot-btn--start is-idle" onClick={startGame}>
+          <FaPlay />
+          <span className="lot-btn__label">Iniciar juego</span>
         </button>
       )}
     </div>

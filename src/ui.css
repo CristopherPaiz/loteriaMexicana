@@ -1,0 +1,1044 @@
+/* ============================================================
+   Sistema de UI de paneles y botones.
+   Único dueño de: botones (.lot-btn), panel lateral (.lot-panel),
+   controles del panel y layout general de la app.
+   ============================================================ */
+
+:root {
+  /* Superficies */
+  --lot-surface-0: #101219;
+  --lot-surface-1: #171a23;
+  --lot-surface-2: #1f232e;
+  --lot-surface-3: #2a2f3d;
+
+  /* Texto */
+  --lot-text: #f3f5fa;
+  --lot-text-muted: rgba(243, 245, 250, 0.62);
+  --lot-text-faint: rgba(243, 245, 250, 0.38);
+
+  /* Bordes */
+  --lot-border: rgba(255, 255, 255, 0.09);
+  --lot-border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Acentos */
+  --lot-red: #e63946;
+  --lot-red-deep: #b8202d;
+  --lot-green: #2a9d8f;
+  --lot-green-deep: #1d7268;
+  --lot-blue: #4585c4;
+  --lot-blue-deep: #2f6299;
+  --lot-amber: #f4a261;
+
+  /* Elevación */
+  --lot-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --lot-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.35);
+  --lot-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+
+  /* Formas y ritmo */
+  --lot-radius-sm: 10px;
+  --lot-radius: 14px;
+  --lot-radius-lg: 20px;
+  --lot-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* El proyecto no tenía reset de box-sizing: con content-box, el padding de un
+   contenedor se suma a su ancho y desborda al padre (era lo que recortaba la
+   rejilla del historial y descuadraba varios paneles). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* La minicarta usa el borde blanco como marco por fuera de la imagen. */
+.mini-card {
+  box-sizing: content-box;
+}
+
+/* Reset neutro: cada botón define su propio aspecto. */
+button {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------
+   Layout general
+
+   La app es una sola pantalla: ocupa exactamente el alto del viewport
+   y nunca desborda. El reparto vertical es:
+     top-panel (fijo) → título (fijo) → escenario (elástico) → nada más
+   Dentro del escenario, la carta es lo único que cede tamaño; los textos
+   y botones solo se reducen cuando la pantalla es realmente baja.
+   ------------------------------------------------------------ */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+:root {
+  /* Grosor del marco de la carta. También es el aire alrededor de ella. */
+  --lot-frame: clamp(9px, 2.2vh, 18px);
+}
+
+body {
+  overflow: hidden;
+}
+
+.loteria-container {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+  position: relative;
+}
+
+/* Cabecera: título + contador. El padding lateral deja libre el botón
+   flotante de ajustes sin descentrar el título. */
+.loteria-header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 62px 8px;
+  position: relative;
+  z-index: 10;
+}
+
+.top-panel {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: var(--lot-top-panel-h, 92px);
+  position: relative;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* Zona elástica: contiene el panel principal y el contador. */
+.loteria-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+
+.main-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lot-main-gap, 14px);
+  padding: 8px 16px calc(var(--lot-main-pb, 24px) + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  z-index: 5;
+}
+
+/* Hueco de la carta: se queda con el espacio sobrante, con aire propio
+   arriba y abajo para que la carta no quede pegada a los botones. */
+.lot-card-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: var(--lot-frame, 14px) 0;
+}
+
+.title {
+  flex: none;
+  text-align: center;
+  margin: 0;
+  line-height: 1.15;
+  color: #fff;
+  font-size: clamp(1.25rem, 5.5vw, 2rem);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.game-over {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.loteria-progress-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--lot-border);
+  background: rgba(16, 18, 25, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--lot-text-muted);
+  white-space: nowrap;
+}
+
+.mini-card {
+  width: var(--lot-mini-w, 40px);
+  height: var(--lot-mini-h, 65px);
+  margin: 0 -10px;
+  border: var(--lot-mini-border, 10px) solid white;
+  border-radius: 10px;
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 1));
+  position: relative;
+  z-index: 5;
+}
+
+.mini-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------
+   Botones
+   ------------------------------------------------------------ */
+
+.lot-btn {
+  --lot-btn-bg: var(--lot-surface-2);
+  --lot-btn-bg-hover: var(--lot-surface-3);
+  --lot-btn-fg: var(--lot-text);
+  --lot-btn-ring: var(--lot-border-strong);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 22px;
+  border-radius: var(--lot-radius);
+  border: 1px solid var(--lot-btn-ring);
+  background: var(--lot-btn-bg);
+  color: var(--lot-btn-fg);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-align: center;
+  box-shadow: var(--lot-shadow-sm);
+  transition: background-color 0.18s ease, transform 0.12s var(--lot-ease), box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lot-btn:hover:not(:disabled) {
+  background: var(--lot-btn-bg-hover);
+  box-shadow: var(--lot-shadow-md);
+}
+
+.lot-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.995);
+  box-shadow: var(--lot-shadow-sm);
+}
+
+.lot-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 18, 25, 0.9), 0 0 0 5px var(--lot-amber);
+}
+
+.lot-btn:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.lot-btn svg {
+  flex: none;
+  font-size: 1.05em;
+}
+
+/* Variantes de color */
+.lot-btn--start {
+  --lot-btn-bg: linear-gradient(160deg, var(--lot-green) 0%, var(--lot-green-deep) 100%);
+  --lot-btn-bg-hover: linear-gradient(160deg, #33b5a5 0%, #218176 100%);
+  --lot-btn-ring: rgba(42, 157, 143, 0.55);
+  color: #fff;
+  font-size: 1.05rem;
+  min-height: 56px;
+  box-shadow: 0 8px 24px rgba(42, 157, 143, 0.32);
+}
+
+.lot-btn--next {
+  --lot-btn-bg: linear-gradient(160deg, var(--lot-blue) 0%, var(--lot-blue-deep) 100%);
+  --lot-btn-bg-hover: linear-gradient(160deg, #5497d8 0%, #3a71ad 100%);
+  --lot-btn-ring: rgba(69, 133, 196, 0.5);
+  color: #fff;
+}
+
+.lot-btn--danger {
+  --lot-btn-bg: linear-gradient(160deg, var(--lot-red) 0%, var(--lot-red-deep) 100%);
+  --lot-btn-bg-hover: linear-gradient(160deg, #f04d59 0%, #cc2532 100%);
+  --lot-btn-ring: rgba(230, 57, 70, 0.5);
+  color: #fff;
+}
+
+.lot-btn--ghost {
+  --lot-btn-bg: rgba(255, 255, 255, 0.04);
+  --lot-btn-bg-hover: rgba(255, 255, 255, 0.09);
+  --lot-btn-ring: var(--lot-border);
+  color: var(--lot-text-muted);
+}
+
+.lot-btn--block {
+  width: 100%;
+}
+
+/* Botón de arranque con latido sutil, respetando reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  .lot-btn--start.is-idle {
+    animation: lot-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes lot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px rgba(42, 157, 143, 0.32);
+  }
+  50% {
+    box-shadow: 0 8px 34px rgba(42, 157, 143, 0.55);
+  }
+}
+
+/* Grupo de acciones bajo la carta */
+.lot-actions {
+  flex: none;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lot-hint {
+  flex: none;
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* ------------------------------------------------------------
+   Botón flotante del menú
+   ------------------------------------------------------------ */
+
+.lot-fab {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--lot-border-strong);
+  background: rgba(23, 26, 35, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--lot-text);
+  font-size: 1.2rem;
+  box-shadow: var(--lot-shadow-md);
+  transition: transform 0.16s var(--lot-ease), background-color 0.18s ease;
+}
+
+.lot-fab:hover {
+  background: rgba(42, 47, 61, 0.85);
+  transform: scale(1.06);
+}
+
+.lot-fab:active {
+  transform: scale(0.96);
+}
+
+.lot-fab:focus-visible {
+  outline: none;
+  box-shadow: var(--lot-shadow-md), 0 0 0 3px var(--lot-amber);
+}
+
+/* ------------------------------------------------------------
+   Panel lateral
+   ------------------------------------------------------------ */
+
+.lot-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(6, 7, 11, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.lot-panel-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lot-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1500;
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(31, 35, 46, 0.96) 0%, rgba(16, 18, 25, 0.98) 100%);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border-left: 1px solid var(--lot-border);
+  box-shadow: var(--lot-shadow-lg);
+  color: var(--lot-text);
+  transform: translateX(103%);
+  visibility: hidden;
+  transition: transform 0.38s var(--lot-ease), visibility 0s linear 0.38s;
+}
+
+.lot-panel.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.38s var(--lot-ease), visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lot-panel,
+  .lot-panel-backdrop {
+    transition: none;
+  }
+}
+
+.lot-panel__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--lot-border);
+}
+
+.lot-panel__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lot-panel__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.lot-panel__subtitle {
+  font-size: 0.75rem;
+  color: var(--lot-text-faint);
+}
+
+.lot-panel__close {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--lot-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--lot-text-muted);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.lot-panel__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--lot-text);
+}
+
+.lot-panel__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lot-amber);
+}
+
+.lot-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.lot-panel__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lot-panel__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lot-panel__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.lot-panel__footer {
+  flex: none;
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--lot-border);
+  background: rgba(16, 18, 25, 0.6);
+}
+
+/* Secciones */
+.lot-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lot-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lot-section__title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--lot-text-faint);
+}
+
+.lot-section__value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--lot-amber);
+}
+
+.lot-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--lot-radius-sm);
+  border: 1px solid var(--lot-border);
+  border-left: 3px solid var(--lot-amber);
+  background: rgba(244, 162, 97, 0.08);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--lot-text-muted);
+  text-align: left;
+}
+
+.lot-note--warn {
+  border-left-color: var(--lot-red);
+  background: rgba(230, 57, 70, 0.09);
+}
+
+/* Selector de voces */
+.lot-voices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.lot-voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: var(--lot-radius);
+  border: 1px solid var(--lot-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--lot-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.12s var(--lot-ease);
+}
+
+.lot-voice__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.lot-voice:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--lot-text);
+}
+
+.lot-voice:active {
+  transform: scale(0.97);
+}
+
+.lot-voice.is-active {
+  border-color: rgba(42, 157, 143, 0.75);
+  background: linear-gradient(160deg, rgba(42, 157, 143, 0.28) 0%, rgba(42, 157, 143, 0.1) 100%);
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(42, 157, 143, 0.35), 0 6px 18px rgba(42, 157, 143, 0.2);
+}
+
+.lot-voice:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lot-amber);
+}
+
+/* Control segmentado */
+.lot-segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--lot-radius);
+  border: 1px solid var(--lot-border);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.lot-segmented__option {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--lot-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.lot-segmented__option:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lot-text);
+}
+
+.lot-segmented__option.is-active {
+  background: var(--lot-surface-3);
+  color: #fff;
+  box-shadow: var(--lot-shadow-sm);
+}
+
+.lot-segmented__option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lot-amber);
+}
+
+.lot-segmented--warn .lot-segmented__option.is-active {
+  background: linear-gradient(160deg, var(--lot-amber) 0%, #d9813f 100%);
+  color: #241606;
+}
+
+/* Sliders */
+.lot-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lot-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.lot-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--lot-green);
+  box-shadow: var(--lot-shadow-sm);
+  transition: transform 0.12s var(--lot-ease);
+}
+
+.lot-range::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.lot-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.lot-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--lot-green);
+  box-shadow: var(--lot-shadow-sm);
+}
+
+.lot-range:focus-visible {
+  outline: none;
+}
+
+.lot-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(244, 162, 97, 0.5);
+}
+
+.lot-range-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--lot-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------
+   Modal de pantalla (historial de cartas)
+   ------------------------------------------------------------ */
+
+.lot-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(6, 7, 11, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: lot-fade-in 0.2s ease-out;
+}
+
+.lot-modal {
+  width: min(820px, 100%);
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius-lg);
+  background: linear-gradient(180deg, rgba(31, 35, 46, 0.98) 0%, rgba(16, 18, 25, 0.99) 100%);
+  box-shadow: var(--lot-shadow-lg);
+  color: var(--lot-text);
+  animation: lot-rise 0.24s var(--lot-ease);
+}
+
+.lot-modal__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--lot-border);
+}
+
+.lot-modal__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lot-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lot-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.lot-modal__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lot-modal__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+@keyframes lot-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lot-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Rejilla del historial */
+.lot-history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--lot-history-min, 84px), 1fr));
+  gap: 12px;
+}
+
+/* El item no recorta: así la insignia puede asomar por la esquina. El recorte
+   y el borde viven en el marco interior. */
+.lot-history__item {
+  position: relative;
+  overflow: visible;
+}
+
+.lot-history__frame {
+  border-radius: var(--lot-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--lot-border);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: var(--lot-shadow-sm);
+}
+
+.lot-history__item.is-latest .lot-history__frame {
+  border-color: rgba(42, 157, 143, 0.8);
+  box-shadow: 0 0 0 1px rgba(42, 157, 143, 0.45), 0 6px 18px rgba(42, 157, 143, 0.22);
+}
+
+.lot-history__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 700;
+  object-fit: cover;
+}
+
+/* Sale de la esquina superior derecha en lugar de taparle la ilustración. */
+.lot-history__badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 18, 25, 0.9);
+  background: var(--lot-green-deep);
+  color: #fff;
+  font-size: 0.66rem;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.lot-history__item.is-latest .lot-history__badge {
+  background: var(--lot-green);
+}
+
+.lot-modal__empty {
+  margin: 0;
+  padding: 32px 8px;
+  text-align: center;
+  color: var(--lot-text-faint);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  /* En móvil siempre 4 por fila, sin depender del ancho de la miniatura. */
+  .lot-history {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+
+  .lot-modal__header {
+    padding: 14px 14px 12px;
+  }
+
+  .lot-modal__body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Responsive
+
+   Los breakpoints por ALTO son los que reducen la interfaz: primero cede
+   la carta (es elástica por sí sola), luego el cabezal y los textos, y por
+   último los botones pasan a una sola fila con "Reiniciar" como icono.
+   ------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+  .lot-panel {
+    width: min(88%, 380px);
+  }
+
+  .main-panel {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* En móvil los dos botones van en una fila: "Reiniciar" a la izquierda,
+   solo con su icono, y "Siguiente carta" se queda con el resto del ancho. */
+@media (max-width: 768px) {
+  .lot-actions {
+    flex-direction: row;
+    align-items: stretch;
+    max-width: 380px;
+  }
+
+  .lot-actions .lot-btn--danger {
+    order: -1;
+    flex: 0 0 auto;
+    width: 56px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .lot-actions .lot-btn--danger .lot-btn__label {
+    display: none;
+  }
+
+  .lot-actions .lot-btn--next,
+  .lot-actions .lot-btn--start {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+/* Pantallas de alto medio: cabezal y espacios más apretados. */
+@media (max-height: 780px) {
+  :root {
+    --lot-top-panel-h: 80px;
+    --lot-mini-w: 34px;
+    --lot-mini-h: 55px;
+    --lot-mini-border: 8px;
+    --lot-main-pb: 22px;
+    --lot-main-gap: 10px;
+  }
+
+  .loteria-header {
+    padding-top: 8px;
+    padding-bottom: 4px;
+    gap: 4px;
+  }
+}
+
+/* Pantallas bajas: fuera el texto de ayuda, cabezal mínimo. */
+@media (max-height: 660px) {
+  :root {
+    --lot-top-panel-h: 68px;
+    --lot-mini-w: 29px;
+    --lot-mini-h: 47px;
+    --lot-mini-border: 7px;
+    --lot-main-pb: 18px;
+    --lot-main-gap: 8px;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .lot-hint {
+    display: none;
+  }
+
+  .lot-btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
+  .lot-btn--start {
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Pantallas muy bajas: se va también el título. */
+@media (max-height: 580px) {
+  :root {
+    --lot-top-panel-h: 58px;
+    --lot-mini-w: 25px;
+    --lot-mini-h: 40px;
+    --lot-mini-border: 6px;
+    --lot-main-pb: 14px;
+  }
+
+  .title {
+    display: none;
+  }
+
+  .loteria-header {
+    padding-top: 6px;
+  }
+
+  .lot-btn {
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+
+  .lot-btn--start {
+    min-height: 42px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .lot-panel__body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}

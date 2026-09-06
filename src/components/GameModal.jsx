@@ -11,12 +11,12 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
         <div className="game-modal-body">{children}</div>
         <div className="game-modal-actions">
           {showCancel && (
-            <button className="game-modal-button cancel" onClick={onCancel}>
-              <FaTimes style={{ marginRight: "8px" }} /> {cancelText}
+            <button type="button" className="lot-btn lot-btn--ghost" onClick={onCancel}>
+              <FaTimes /> {cancelText}
             </button>
           )}
-          <button className="game-modal-button confirm" onClick={onConfirm}>
-            <FaCheck style={{ marginRight: "8px" }} /> {confirmText}
+          <button type="button" className="lot-btn lot-btn--start" onClick={onConfirm}>
+            <FaCheck /> {confirmText}
           </button>
         </div>
       </div>
@@ -48,6 +48,8 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
           border: 1px solid rgba(255, 255, 255, 0.1);
           animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           margin: 20px;
+          max-height: calc(100dvh - 40px);
+          overflow-y: auto;
         }
 
         .game-modal-title {
@@ -72,42 +74,31 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
           flex-wrap: wrap;
         }
 
-        .game-modal-button {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 30px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-          display: flex;
-          align-items: center;
-          font-size: 1rem;
-          min-width: 120px;
-          justify-content: center;
+        .game-modal-actions .lot-btn {
+          min-width: 140px;
         }
 
-        .game-modal-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
+        /* En móvil los dos botones se quedan en una sola fila: se reparten el
+           ancho y el texto puede partirse dentro del botón. */
+        @media (max-width: 600px) {
+          .game-modal-content {
+            padding: 24px 18px;
+            margin: 14px;
+          }
 
-        .game-modal-button:active {
-          transform: translateY(0);
-        }
+          .game-modal-actions {
+            flex-wrap: nowrap;
+            gap: 10px;
+          }
 
-        .game-modal-button.confirm {
-          background: linear-gradient(90deg, #4CAF50, #45a049);
-          color: white;
-        }
-
-        .game-modal-button.cancel {
-          background-color: transparent;
-          border: 1px solid #ff5252;
-          color: #ff5252;
-        }
-
-        .game-modal-button.cancel:hover {
-            background-color: rgba(255, 82, 82, 0.1);
+          .game-modal-actions .lot-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 12px 10px;
+            gap: 6px;
+            font-size: 0.85rem;
+            line-height: 1.25;
+          }
         }
 
         @keyframes fadeIn {
