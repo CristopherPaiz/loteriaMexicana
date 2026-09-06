@@ -724,13 +724,6 @@ const Loteria = ({ openJoin = false }) => {
           setShowMenu(false);
           setIsModalOpen(true);
         }}
-        onOpenMultiplayer={() => openRoom("sala")}
-        onOpenHelp={() => {
-          setShowMenu(false);
-          setShowHelp(true);
-        }}
-        roomCode={room?.gameCode ?? null}
-        isPlayerDevice={isPlayerDevice}
       />
       {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
 
