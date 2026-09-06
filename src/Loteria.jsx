@@ -23,6 +23,15 @@ const SETTINGS_KEY = "loteria_settings";
 const VOICES = ["hombre", "mujer", "nino", "joven"];
 const DEFAULT_VOICE = "mujer";
 
+// Cada opción es una coreografía cerrada de salida + entrada (ver Loteria.css).
+const CARD_ANIMATIONS = [
+  { value: "fade", label: "Fundido" },
+  { value: "slide", label: "Deslizar" },
+  { value: "flip", label: "Voltear" },
+  { value: "none", label: "Ninguna" },
+];
+const DEFAULT_CARD_ANIMATION = "fade";
+
 const cardImageUrls = (type) => Array.from({ length: CARD_LENGTH }, (_, i) => `/${type}WEBP/${i + 1}.webp`);
 const voiceSoundUrls = (voice) => Array.from({ length: CARD_LENGTH }, (_, i) => `/sounds/${voice}/${i + 1}. ${voice}.mp3`);
 
@@ -73,6 +82,7 @@ const Loteria = () => {
   const [assetCache, setAssetCache] = useState({});
   const [volumeBoost, setVolumeBoost] = useState(1.0);
   const [dimLevel, setDimLevel] = useState(0.5);
+  const [cardAnimation, setCardAnimation] = useState(DEFAULT_CARD_ANIMATION);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_BREAKPOINT);
 
   // Espejo del caché para leerlo desde timers y para revocar los blobs al desmontar.
@@ -152,6 +162,9 @@ const Loteria = () => {
         const parsedSettings = JSON.parse(savedSettings);
         if (parsedSettings.volumeBoost) setVolumeBoost(parsedSettings.volumeBoost);
         if (parsedSettings.dimLevel !== undefined) setDimLevel(parsedSettings.dimLevel);
+        if (CARD_ANIMATIONS.some((option) => option.value === parsedSettings.cardAnimation)) {
+          setCardAnimation(parsedSettings.cardAnimation);
+        }
       } catch (e) {
         console.error("Error parsing settings:", e);
       }
@@ -176,8 +189,8 @@ const Loteria = () => {
 
   // Guardar configuraciones cuando cambian
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ volumeBoost, dimLevel }));
-  }, [volumeBoost, dimLevel]);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ volumeBoost, dimLevel, cardAnimation }));
+  }, [volumeBoost, dimLevel, cardAnimation]);
 
   // Grafo de audio: se crea perezosamente en el primer gesto del usuario.
   // Nunca se cierra el AudioContext: createMediaElementSource() solo puede llamarse
@@ -605,7 +618,8 @@ const Loteria = () => {
               typeCard={typeCard}
               isImageLoaded={isImageLoaded}
               nextImageUrl={nextImageUrl}
-              currentImageUrl={getCardImageUrl(currentCard)}
+              getCardImageUrl={getCardImageUrl}
+              cardAnimation={cardAnimation}
             />
 
             {/* Contador como componente independiente */}
@@ -629,6 +643,9 @@ const Loteria = () => {
         onVolumeChangeRequest={handleVolumeChangeRequest}
         dimLevel={dimLevel}
         setDimLevel={setDimLevel}
+        cardAnimations={CARD_ANIMATIONS}
+        cardAnimation={cardAnimation}
+        setCardAnimation={setCardAnimation}
         onOpenGenerator={() => {
           setShowMenu(false);
           setIsModalOpen(true);

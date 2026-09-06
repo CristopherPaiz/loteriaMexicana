@@ -22,6 +22,9 @@ const RightPanel = ({
   typeCard,
   setTypeCard,
   onOpenGenerator,
+  cardAnimations,
+  cardAnimation,
+  setCardAnimation,
   volumeBoost = 1.0,
   onVolumeChangeRequest = () => {},
   dimLevel = 0.5,
@@ -134,6 +137,26 @@ const RightPanel = ({
 
           <section className="lot-section">
             <div className="lot-section__head">
+              <h3 className="lot-section__title">Cambio de carta</h3>
+            </div>
+
+            <div className="lot-segmented lot-segmented--grid" role="group" aria-label="Animación al cambiar de carta">
+              {cardAnimations.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`lot-segmented__option ${cardAnimation === value ? "is-active" : ""}`}
+                  onClick={() => setCardAnimation(value)}
+                  aria-pressed={cardAnimation === value}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="lot-section">
+            <div className="lot-section__head">
               <h3 className="lot-section__title">Volumen extra</h3>
               <span className="lot-section__value">{Math.round(volumeBoost * 100)}%</span>
             </div>
@@ -199,6 +222,14 @@ RightPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   setTypeCard: PropTypes.func.isRequired,
   onOpenGenerator: PropTypes.func.isRequired,
+  cardAnimations: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  cardAnimation: PropTypes.string.isRequired,
+  setCardAnimation: PropTypes.func.isRequired,
   volumeBoost: PropTypes.number,
   onVolumeChangeRequest: PropTypes.func,
   dimLevel: PropTypes.number,

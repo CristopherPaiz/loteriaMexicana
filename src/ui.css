@@ -817,6 +817,12 @@ body {
   box-shadow: 0 0 0 3px var(--lot-amber);
 }
 
+/* Cuatro opciones no caben en una fila legible dentro del panel: 2x2. */
+.lot-segmented--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .lot-segmented--warn .lot-segmented__option.is-active {
   background: linear-gradient(160deg, var(--lot-amber) 0%, #d9813f 100%);
   color: #241606;

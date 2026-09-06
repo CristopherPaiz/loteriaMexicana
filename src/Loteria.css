@@ -91,43 +91,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Microanimación al tocar la carta: encoge al pausar, rebota al reanudar. */
-.loteria-card-container.is-pause {
-  animation: lot-card-pause 420ms var(--lot-ease);
+/* Pausada: la carta se mantiene un poco más pequeña. Al reanudar vuelve a su
+   tamaño con la misma transición. */
+.loteria-card-container {
+  transform: scale(1);
+  transition: transform 0.3s var(--lot-ease);
 }
 
-.loteria-card-container.is-resume {
-  animation: lot-card-resume 420ms var(--lot-ease);
-}
-
-@keyframes lot-card-pause {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(0.945);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes lot-card-resume {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.045);
-  }
-  100% {
-    transform: scale(1);
-  }
+.loteria-card-container.is-held {
+  transform: scale(0.93);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loteria-card-container.is-pause,
-  .loteria-card-container.is-resume {
-    animation: none;
+  .loteria-card-container {
+    transition: none;
   }
 }
 
@@ -155,41 +132,116 @@
   z-index: 2;
 }
 
-/* Carta nueva entrando */
-.loteria-card-incoming {
+/* Carta que se está yendo: siempre por debajo de la que entra. */
+.loteria-card-previous {
   z-index: 1;
+  pointer-events: none;
 }
 
-/* Estados de animación */
-.anim-exit {
-  animation: cardExit 400ms ease forwards;
+/* ------------------------------------------------------------
+   Transiciones entre cartas
+
+   Cada opción define su pareja salida + entrada. Van amarradas a propósito:
+   así la coreografía siempre combina, sin combinaciones sueltas que chirríen.
+   ------------------------------------------------------------ */
+
+.loteria-card-container {
+  --lot-card-anim: 520ms;
 }
 
-.anim-enter {
-  animation: cardEnter 400ms ease forwards;
+/* Fundido: la que sale se desvanece creciendo, la que entra llega encogida. */
+.anim-fade .loteria-card.is-exiting {
+  animation: lot-card-fade-out var(--lot-card-anim) var(--lot-ease) forwards;
 }
 
-/* Animaciones redefinidas */
-@keyframes cardExit {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
+.anim-fade .loteria-card.is-entering {
+  animation: lot-card-fade-in var(--lot-card-anim) var(--lot-ease) both;
+}
+
+@keyframes lot-card-fade-out {
+  to {
     opacity: 0;
-    transform: translateY(-30px);
-    pointer-events: none;
+    transform: scale(1.05);
   }
 }
 
-@keyframes cardEnter {
-  0% {
+@keyframes lot-card-fade-in {
+  from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: scale(0.94);
   }
-  100% {
+  to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
+  }
+}
+
+/* Deslizar: la que sale se va por arriba, la que entra sube desde abajo. */
+.anim-slide .loteria-card.is-exiting {
+  animation: lot-card-slide-out var(--lot-card-anim) var(--lot-ease) forwards;
+}
+
+.anim-slide .loteria-card.is-entering {
+  animation: lot-card-slide-in var(--lot-card-anim) var(--lot-ease) both;
+}
+
+@keyframes lot-card-slide-out {
+  to {
+    opacity: 0;
+    transform: translateY(-42%) scale(0.94);
+  }
+}
+
+@keyframes lot-card-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(42%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Voltear: media vuelta cada una, encadenadas, como girar una sola carta. */
+.anim-flip {
+  perspective: 1400px;
+}
+
+.anim-flip .loteria-card {
+  backface-visibility: hidden;
+}
+
+.anim-flip .loteria-card.is-exiting {
+  animation: lot-card-flip-out calc(var(--lot-card-anim) / 2) ease-in forwards;
+}
+
+.anim-flip .loteria-card.is-entering {
+  animation: lot-card-flip-in calc(var(--lot-card-anim) / 2) ease-out calc(var(--lot-card-anim) / 2) both;
+}
+
+@keyframes lot-card-flip-out {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-90deg);
+  }
+}
+
+@keyframes lot-card-flip-in {
+  from {
+    transform: rotateY(90deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loteria-card.is-exiting,
+  .loteria-card.is-entering {
+    animation: none;
   }
 }
 

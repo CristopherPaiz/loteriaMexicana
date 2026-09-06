@@ -19,7 +19,10 @@ const CardImage = ({ card, typeCard, getCardImageUrl, alt, className = "", style
   if (!card) return null;
 
   const directUrl = `/${typeCard}WEBP/${card}.webp`;
-  const sources = [getCardImageUrl(card) || directUrl, directUrl, `${directUrl}?reintento=1`];
+  // Sin deduplicar, cuando la fuente preferida ya es la URL directa el primer
+  // reintento apuntaría al mismo sitio: React no cambiaría el atributo y la
+  // cadena se quedaría parada en la imagen rota.
+  const sources = [...new Set([getCardImageUrl(card) || directUrl, directUrl, `${directUrl}?reintento=1`])];
 
   if (attempt >= sources.length) {
     return (

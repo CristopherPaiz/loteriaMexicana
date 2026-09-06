@@ -2,36 +2,66 @@ import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import CardImage from "./CardImage";
 
-const PULSE_DURATION = 420;
+// Debe quedar holgadamente por debajo del tiempo mínimo entre cartas (3 s).
+const TRANSITION_MS = 520;
 
-const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, nextImageUrl, imageUrl }) => {
-  // Determinar las clases de juego/pausa
-  const cardStateClass = isPaused && isPlaying ? "paused" : "playing";
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Al pausar la carta se encoge un pelín y al reanudar rebota hacia fuera:
-  // confirma el toque sin necesidad de leer nada.
-  const [pulse, setPulse] = useState(null);
-  const previousPaused = useRef(isPaused);
+const Card = ({ number, onClick, isPaused, typeCard, isPlaying, isImageLoaded, nextImageUrl, getCardImageUrl, cardAnimation }) => {
+  const isHeld = isPaused && isPlaying;
+  const cardStateClass = isHeld ? "paused" : "playing";
+
+  // Capa saliente: la carta anterior se mantiene montada mientras dura la
+  // transición, para que salida y entrada convivan un instante.
+  const [outgoing, setOutgoing] = useState(null);
+  const [pass, setPass] = useState(0);
+  const previousNumber = useRef(number);
 
   useEffect(() => {
-    if (previousPaused.current === isPaused) return undefined;
-    previousPaused.current = isPaused;
+    if (previousNumber.current === number) return undefined;
 
-    if (!isPlaying) return undefined;
+    const leaving = previousNumber.current;
+    previousNumber.current = number;
 
-    setPulse(isPaused ? "pause" : "resume");
-    const timer = setTimeout(() => setPulse(null), PULSE_DURATION);
+    if (cardAnimation === "none" || prefersReducedMotion()) {
+      setOutgoing(null);
+      return undefined;
+    }
+
+    // `pass` reinicia la animación aunque se encadenen dos cambios seguidos.
+    setOutgoing(leaving);
+    setPass((prev) => prev + 1);
+
+    const timer = setTimeout(() => setOutgoing(null), TRANSITION_MS);
     return () => clearTimeout(timer);
-  }, [isPaused, isPlaying]);
+  }, [number, cardAnimation]);
+
+  const isAnimating = outgoing !== null;
+  const animationClass = cardAnimation === "none" ? "" : `anim-${cardAnimation}`;
 
   return (
-    <div className={`loteria-card-container ${pulse ? `is-${pulse}` : ""}`} onClick={onClick}>
+    // Mientras está pausada la carta se queda un poco más pequeña, y al
+    // reanudar vuelve a su tamaño. El estado se ve, no solo el toque.
+    <div className={`loteria-card-container ${animationClass} ${isHeld ? "is-held" : ""}`} onClick={onClick}>
+      {/* Carta que se va */}
+      {isAnimating && (
+        <div key={`saliente-${pass}`} className="loteria-card loteria-card-previous playing is-exiting" aria-hidden="true">
+          <CardImage
+            card={outgoing}
+            typeCard={typeCard}
+            getCardImageUrl={getCardImageUrl}
+            alt=""
+            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+      )}
+
       {/* Carta actual */}
-      <div className={`loteria-card loteria-card-current ${cardStateClass}`}>
+      <div className={`loteria-card loteria-card-current ${cardStateClass} ${isAnimating ? "is-entering" : ""}`}>
         <CardImage
           card={number}
           typeCard={typeCard}
-          getCardImageUrl={() => imageUrl}
+          getCardImageUrl={getCardImageUrl}
           alt={`Carta ${number}`}
           style={{
             display: "block",
@@ -74,5 +104,6 @@ Card.propTypes = {
   isPlaying: PropTypes.bool.isRequired,
   isImageLoaded: PropTypes.bool.isRequired,
   nextImageUrl: PropTypes.string.isRequired,
-  imageUrl: PropTypes.string,
+  getCardImageUrl: PropTypes.func.isRequired,
+  cardAnimation: PropTypes.string.isRequired,
 };

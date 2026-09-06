@@ -13,7 +13,8 @@ const MainPanel = ({
   typeCard,
   isImageLoaded,
   nextImageUrl,
-  currentImageUrl,
+  getCardImageUrl,
+  cardAnimation,
 }) => (
   <div className="main-panel">
     {/* Hueco elástico: la carta se queda con el espacio sobrante */}
@@ -26,7 +27,8 @@ const MainPanel = ({
         isPlaying={isPlaying}
         isImageLoaded={isImageLoaded}
         nextImageUrl={nextImageUrl}
-        imageUrl={currentImageUrl}
+        getCardImageUrl={getCardImageUrl}
+        cardAnimation={cardAnimation}
       />
     </div>
 
@@ -70,5 +72,6 @@ MainPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   isImageLoaded: PropTypes.bool.isRequired,
   nextImageUrl: PropTypes.string.isRequired,
-  currentImageUrl: PropTypes.string.isRequired,
+  getCardImageUrl: PropTypes.func.isRequired,
+  cardAnimation: PropTypes.string.isRequired,
 };
