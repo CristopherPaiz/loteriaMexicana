@@ -4,11 +4,14 @@
    Se usa el hash (#/jugador/...) a propósito: funciona en cualquier hosting
    estático, sobrevive a un refresco sin configurar reescrituras en el servidor
    y no añade ninguna dependencia de router.
+
+   La ruta del jugador solo lleva el código. Los cartones y el modo salen de
+   descifrarlo, nunca de la URL ni de lo que el jugador escoja: así el QR y el
+   código dictado a viva voz llevan exactamente a la misma sala.
    ============================================================ */
 
-import { onlyDigits, GAME_CODE_LENGTH, PLAYER_CODE_LENGTH } from "./codes.js";
-import { DEFAULT_MODE_ID, getMode } from "./modes.js";
-import { MAX_BOARDS_PER_PLAYER, MIN_BOARDS_PER_PLAYER } from "./boards.js";
+import { decodeGameCode, GAME_CODE_LENGTH, onlyDigits, PLAYER_CODE_LENGTH } from "./codes.js";
+import { isMarkerKind } from "./markers.js";
 
 export const HOST_KEY = "loteria_mp_host";
 export const PLAYER_KEY = "loteria_mp_player";
@@ -19,18 +22,12 @@ export const ROUTES = {
   help: "help",
 };
 
-const clampBoards = (value) => {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return MIN_BOARDS_PER_PLAYER;
-  return Math.min(Math.max(Math.round(number), MIN_BOARDS_PER_PLAYER), MAX_BOARDS_PER_PLAYER);
-};
-
 /**
  * Lee la ruta actual del hash.
- * #/                                      -> anfitrión
- * #/como-funciona                         -> explicación
- * #/jugador                               -> unirse escribiendo el código
- * #/jugador/<partida>/<cartones>/<modo>   -> unirse con todo prellenado (QR)
+ * #/                      -> anfitrión
+ * #/como-funciona         -> explicación
+ * #/jugador               -> unirse escribiendo el código
+ * #/jugador/<código>      -> unirse directo (QR)
  */
 export const parseRoute = (hash = window.location.hash) => {
   const segments = String(hash)
@@ -42,12 +39,7 @@ export const parseRoute = (hash = window.location.hash) => {
   if (segments[0] === "como-funciona") return { name: ROUTES.help };
 
   if (segments[0] === "jugador") {
-    return {
-      name: ROUTES.player,
-      gameCode: onlyDigits(segments[1] ?? "", GAME_CODE_LENGTH),
-      boardsPerPlayer: segments[2] ? clampBoards(segments[2]) : null,
-      modeId: segments[3] && getMode(segments[3]).id === segments[3] ? segments[3] : null,
-    };
+    return { name: ROUTES.player, gameCode: onlyDigits(segments[1] ?? "", GAME_CODE_LENGTH) };
   }
 
   return { name: ROUTES.host };
@@ -57,10 +49,10 @@ export const goTo = (path) => {
   window.location.hash = path;
 };
 
-/** Enlace absoluto para el QR: lleva partida, cartones y modo ya resueltos. */
-export const buildJoinUrl = ({ gameCode, boardsPerPlayer, modeId }) => {
+/** Enlace absoluto para el QR. El código ya lleva cartones y modo dentro. */
+export const buildJoinUrl = (gameCode) => {
   const { origin, pathname } = window.location;
-  return `${origin}${pathname}#/jugador/${gameCode}/${clampBoards(boardsPerPlayer)}/${modeId || DEFAULT_MODE_ID}`;
+  return `${origin}${pathname}#/jugador/${onlyDigits(gameCode, GAME_CODE_LENGTH)}`;
 };
 
 const readJson = (key) => {
@@ -82,33 +74,36 @@ const writeJson = (key, value) => {
   }
 };
 
-export const loadHostRoom = () => {
-  const saved = readJson(HOST_KEY);
-  if (!saved?.gameCode) return null;
+/**
+ * Sala del anfitrión. Solo se guarda el código: cartones y modo se descifran
+ * de él, así que no pueden quedar desincronizados con lo que ven los jugadores.
+ */
+export const loadHostRoom = () => decodeGameCode(readJson(HOST_KEY)?.gameCode);
 
-  return {
-    gameCode: onlyDigits(saved.gameCode, GAME_CODE_LENGTH),
-    boardsPerPlayer: clampBoards(saved.boardsPerPlayer),
-    modeId: getMode(saved.modeId).id,
-  };
-};
-
-export const saveHostRoom = (room) => writeJson(HOST_KEY, room);
+export const saveHostRoom = (room) => writeJson(HOST_KEY, room ? { gameCode: room.gameCode } : null);
 
 export const loadPlayerSession = () => {
   const saved = readJson(PLAYER_KEY);
-  if (!saved?.gameCode || !saved?.playerCode) return null;
+  const room = decodeGameCode(saved?.gameCode);
+  if (!room || !saved?.playerCode) return null;
 
   return {
-    gameCode: onlyDigits(saved.gameCode, GAME_CODE_LENGTH),
+    ...room,
     playerCode: onlyDigits(saved.playerCode, PLAYER_CODE_LENGTH),
-    boardsPerPlayer: clampBoards(saved.boardsPerPlayer),
-    modeId: getMode(saved.modeId).id,
+    // null hasta que el jugador escoge con qué marca: es lo que dispara la
+    // pantalla de elección al recibir el cartón.
+    marker: isMarkerKind(saved.marker) ? saved.marker : null,
     // Las marcas se guardan por cartón: { "0": [3, 7, 11], "1": [...] }
     marks: saved.marks && typeof saved.marks === "object" ? saved.marks : {},
   };
 };
 
-export const savePlayerSession = (session) => writeJson(PLAYER_KEY, session);
+export const savePlayerSession = (session) =>
+  writeJson(PLAYER_KEY, {
+    gameCode: session.gameCode,
+    playerCode: session.playerCode,
+    marker: session.marker,
+    marks: session.marks,
+  });
 
 export const clearPlayerSession = () => writeJson(PLAYER_KEY, null);

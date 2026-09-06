@@ -1,29 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { FaTimes, FaSyncAlt, FaCopy, FaCheck, FaQuestionCircle, FaUsers, FaClipboardCheck, FaCrown, FaMobileAlt, FaSignInAlt } from "react-icons/fa";
+import { FaTimes, FaSyncAlt, FaCopy, FaCheck, FaQuestionCircle, FaUsers, FaClipboardCheck, FaCrown, FaMobileAlt, FaSignInAlt, FaPlay } from "react-icons/fa";
 import QrCode from "./QrCode";
 import VerifyPanel from "./VerifyPanel";
-import { createGameCode, formatCode } from "../../multiplayer/codes";
+import { createGameCode, decodeGameCode, formatCode, MAX_BOARDS } from "../../multiplayer/codes";
 import { GAME_MODES, getMode } from "../../multiplayer/modes";
-import { MAX_BOARDS_PER_PLAYER } from "../../multiplayer/boards";
 import { buildJoinUrl } from "../../multiplayer/session";
 
-const BOARD_OPTIONS = Array.from({ length: MAX_BOARDS_PER_PLAYER }, (_, i) => i + 1);
+const BOARD_OPTIONS = Array.from({ length: MAX_BOARDS }, (_, i) => i + 1);
 
 /**
  * Sala del anfitrión: crea la partida, decide las reglas y verifica loterías.
  *
- * El anfitrión decide todo —semilla, cartones por jugador y modo— y lo reparte
- * como QR o como código de 6 dígitos.
+ * El anfitrión decide todo y el código lo lleva dentro, así que tocar cualquier
+ * ajuste genera un código nuevo: otra configuración es otra sala. Es lo que
+ * evita que alguien se quede jugando con reglas viejas sin enterarse.
  */
-const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, drawnCards, typeCard, onOpenHelp, initialView = "sala" }) => {
+const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, onStartGame, drawnCards, typeCard, onOpenHelp, initialView = "sala" }) => {
   const [view, setView] = useState(initialView);
   const [copied, setCopied] = useState(false);
   const closeRef = useRef(null);
   const copyTimerRef = useRef(null);
 
   // Cada apertura arranca en la sección que pidió quien abrió: el botón de la
-  // cabecera lleva directo a verificar, el del panel a la sala.
+  // cabecera lleva directo a verificar, el del inicio a la sala.
   useEffect(() => {
     if (isOpen) setView(initialView);
   }, [isOpen, initialView]);
@@ -43,13 +43,15 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
 
   useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
-  const joinUrl = useMemo(() => (room ? buildJoinUrl(room) : ""), [room]);
+  const joinUrl = useMemo(() => (room ? buildJoinUrl(room.gameCode) : ""), [room]);
   const mode = getMode(room?.modeId);
 
   if (!isOpen) return null;
 
-  const createRoom = () => {
-    onRoomChange({ gameCode: createGameCode(), boardsPerPlayer: 1, modeId: mode.id });
+  /** Toda configuración estrena código: la sala anterior deja de existir. */
+  const reconfigure = (patch) => {
+    const next = { boardsPerPlayer: room?.boardsPerPlayer ?? 1, modeId: room?.modeId ?? mode.id, ...patch };
+    onRoomChange(decodeGameCode(createGameCode(next)));
     setView("sala");
   };
 
@@ -77,7 +79,12 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
 
         {room && (
           <div className="lot-segmented mp-room__tabs" role="group" aria-label="Secciones de la sala">
-            <button type="button" className={`lot-segmented__option ${view === "sala" ? "is-active" : ""}`} onClick={() => setView("sala")} aria-pressed={view === "sala"}>
+            <button
+              type="button"
+              className={`lot-segmented__option ${view === "sala" ? "is-active" : ""}`}
+              onClick={() => setView("sala")}
+              aria-pressed={view === "sala"}
+            >
               <FaUsers /> La sala
             </button>
             <button
@@ -95,12 +102,12 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
           {!room && (
             <div className="mp-empty">
               <p className="mp-empty__intro">
-                Cada quien juega con su propio cartón en su teléfono y pone sus frijoles a mano. Alguien canta las cartas y los demás siguen desde su pantalla.
+                Cada quien juega con su propio cartón en su teléfono y pone sus marcas a mano. Alguien canta las cartas y los demás siguen desde su pantalla.
               </p>
 
               {/* Dos caminos, no uno: el que canta y el que juega. Cada
                   teléfono elige aquí qué papel le toca. */}
-              <button type="button" className="mp-role mp-role--host" onClick={createRoom}>
+              <button type="button" className="mp-role mp-role--host" onClick={() => reconfigure({})}>
                 <FaCrown />
                 <span className="mp-role__text">
                   <strong>Yo canto las cartas</strong>
@@ -132,11 +139,11 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
                   <button type="button" className="lot-btn lot-btn--ghost" onClick={copyLink}>
                     {copied ? <FaCheck /> : <FaCopy />} {copied ? "Copiado" : "Copiar"}
                   </button>
-                  <button type="button" className="lot-btn lot-btn--ghost" onClick={createRoom}>
-                    <FaSyncAlt /> Nueva sala
+                  <button type="button" className="lot-btn lot-btn--ghost" onClick={() => reconfigure({})}>
+                    <FaSyncAlt /> Otro código
                   </button>
                 </div>
-                <p className="lot-note">Escanear el QR entra directo. Dictar los 6 dígitos también sirve.</p>
+                <p className="lot-note">Estos seis dígitos ya llevan dentro los cartones y el modo. El jugador no configura nada: solo los teclea.</p>
               </section>
 
               <section className="lot-section">
@@ -150,14 +157,14 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
                       key={value}
                       type="button"
                       className={`lot-segmented__option ${room.boardsPerPlayer === value ? "is-active" : ""}`}
-                      onClick={() => onRoomChange({ ...room, boardsPerPlayer: value })}
+                      onClick={() => reconfigure({ boardsPerPlayer: value })}
                       aria-pressed={room.boardsPerPlayer === value}
                     >
                       {value}
                     </button>
                   ))}
                 </div>
-                <p className="lot-note lot-note--warn">Cámbialo antes de que se unan: quien ya entró se quedó con los cartones de entonces.</p>
+                <p className="lot-note">Gana quien complete el patrón en cualquiera de ellos, no en todos.</p>
               </section>
 
               <section className="lot-section">
@@ -170,7 +177,7 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
                       key={item.id}
                       type="button"
                       className={`lot-segmented__option ${room.modeId === item.id ? "is-active" : ""}`}
-                      onClick={() => onRoomChange({ ...room, modeId: item.id })}
+                      onClick={() => reconfigure({ modeId: item.id })}
                       aria-pressed={room.modeId === item.id}
                     >
                       {item.label}
@@ -179,6 +186,14 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, dr
                 </div>
                 <p className="lot-note">{mode.description}</p>
               </section>
+
+              <p className="lot-note lot-note--warn">
+                Cambiar cualquier ajuste estrena código: otra configuración es otra sala. Reparte el número cuando ya lo tengas todo como quieres.
+              </p>
+
+              <button type="button" className="lot-btn lot-btn--start lot-btn--block" onClick={onStartGame}>
+                <FaPlay /> Listo, a jugar
+              </button>
 
               <button type="button" className="lot-btn lot-btn--ghost lot-btn--block" onClick={onJoinAsPlayer}>
                 <FaSignInAlt /> Entrar como jugador
@@ -207,6 +222,7 @@ HostRoomModal.propTypes = {
   }),
   onRoomChange: PropTypes.func.isRequired,
   onJoinAsPlayer: PropTypes.func.isRequired,
+  onStartGame: PropTypes.func.isRequired,
   drawnCards: PropTypes.arrayOf(PropTypes.number).isRequired,
   typeCard: PropTypes.string.isRequired,
   onOpenHelp: PropTypes.func.isRequired,

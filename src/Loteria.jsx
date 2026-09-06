@@ -525,7 +525,9 @@ const Loteria = () => {
     setShowStopConfirm(true);
   };
 
-  const confirmStopGame = () => {
+  // Reinicio del mazo. Lo usan tanto el botón de reiniciar como el cambio de
+  // sala: una configuración nueva estrena partida.
+  const resetGame = () => {
     setIsPlaying(false);
     setIsPaused(false);
     clearTimeout(timerRef.current);
@@ -545,6 +547,10 @@ const Loteria = () => {
     setDisplayedCard(null);
     setGameOver(false);
     localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const confirmStopGame = () => {
+    resetGame();
     setShowStopConfirm(false);
   };
 
@@ -557,19 +563,26 @@ const Loteria = () => {
 
   // El modo puede traer su propio ritmo (Express canta cada 3 s). Se aplica al
   // elegirlo, pero el anfitrión sigue mandando: el deslizador lo sobrescribe.
-  const handleRoomChange = useCallback((next) => {
+  const handleRoomChange = (next) => {
+    if (!next) return;
+
+    const isNewRoom = next.gameCode !== room?.gameCode;
     setRoom(next);
     saveHostRoom(next);
 
     const modeTime = getMode(next.modeId).time;
     if (modeTime) setTime(modeTime);
-  }, []);
 
-  const openRoom = useCallback((view) => {
+    // Sala nueva, mazo nuevo: las cartas ya cantadas eran de la sala anterior
+    // y los cartones de todos acaban de cambiar.
+    if (isNewRoom) resetGame();
+  };
+
+  const openRoom = (view) => {
     setRoomView(view);
     setShowRoom(true);
     setShowMenu(false);
-  }, []);
+  };
 
   return (
     <div className="loteria-container loteria-modern">
@@ -703,6 +716,7 @@ const Loteria = () => {
         room={room}
         onRoomChange={handleRoomChange}
         onJoinAsPlayer={() => goTo("/jugador")}
+        onStartGame={() => setShowRoom(false)}
         drawnCards={pastCardsAll}
         typeCard={typeCard}
         onOpenHelp={() => goTo("/como-funciona")}

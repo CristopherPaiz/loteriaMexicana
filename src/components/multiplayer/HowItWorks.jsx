@@ -27,13 +27,11 @@ const HowItWorks = ({ onBack }) => (
         <p>Es quien canta las cartas: pone su teléfono en la mesa y todos lo escuchan. Decide todo lo demás:</p>
         <ol className="mp-doc__list">
           <li>
-            Crea la sala y sale un <strong>código de partida de 6 dígitos</strong>.
+            Elige <strong>cuántos cartones</strong> tiene cada jugador (1, 2 o 3) y el <strong>modo de juego</strong>: cartón lleno, una línea, cuatro
+            esquinas…
           </li>
           <li>
-            Elige <strong>cuántos cartones</strong> tiene cada jugador (1, 2 o 3).
-          </li>
-          <li>
-            Elige el <strong>modo de juego</strong>: cartón lleno, una línea, cuatro esquinas…
+            Sale un <strong>código de partida de 6 dígitos</strong> que ya lleva esos ajustes dentro. Si cambia algo, cambia el código: es otra sala.
           </li>
           <li>Enseña el QR o dicta el código y empieza a cantar.</li>
           <li>
@@ -47,17 +45,26 @@ const HowItWorks = ({ onBack }) => (
           <FaMobileAlt /> El jugador
         </h2>
         <ol className="mp-doc__list">
-          <li>Escanea el QR del anfitrión o escribe el código de partida.</li>
+          <li>
+            Escanea el QR del anfitrión o escribe el código de partida. <strong>No configura nada más</strong>: los cartones y el modo vienen dentro del
+            código, así que es imposible acabar jugando con reglas distintas a las de la mesa.
+          </li>
           <li>
             Su teléfono le da un <strong>código propio de 5 dígitos</strong> y sus cartones. Ese código es su identidad en la partida: no lo pierda de vista.
           </li>
           <li>
-            <strong>Marca sus cartas a mano</strong> tocándolas cuando las oye cantar.
+            Escoge con qué va a marcar —frijol, maíz o corcholata— y todo su cartón usa lo mismo.
           </li>
-          <li>Al completar lo que pide el modo, grita «¡Lotería!» y dice sus 5 dígitos al anfitrión.</li>
+          <li>
+            <strong>Marca sus cartas a mano</strong> tocándolas cuando las oye cantar. La casilla tapada se apaga, así que de un vistazo se ve lo que falta.
+          </li>
+          <li>
+            Al completar lo que pide el modo <strong>en cualquiera de sus cartones</strong> —no hacen falta todos—, grita «¡Lotería!» y dice sus 5 dígitos al
+            anfitrión.
+          </li>
         </ol>
         <p className="mp-doc__note">
-          <FaHandPointUp /> Nadie marca las cartas por ti. Si no te das cuenta de una y no pones el frijol, te la comes: ese despiste es parte del juego de
+          <FaHandPointUp /> Nadie marca las cartas por ti. Si no te das cuenta de una y no pones tu frijol, te la comes: ese despiste es parte del juego de
           siempre.
         </p>
       </section>
@@ -80,7 +87,8 @@ const HowItWorks = ({ onBack }) => (
             el teléfono del anfitrión.
           </li>
           <li>
-            <strong>Tu cartón no cambia.</strong> Si cierras la app y vuelves, tu código y tus frijoles siguen ahí.
+            <strong>Tu cartón no cambia.</strong> Si cierras la app y vuelves, tu código y tus marcas siguen ahí. Entre ronda y ronda puedes limpiar las
+            marcas sin perder el cartón, o pedir cartones nuevos si quieres cambiar de suerte.
           </li>
           <li>
             <strong>Se verifica contra lo cantado.</strong> Al comprobar tu lotería no se miran tus frijoles, se mira si esas cartas salieron de verdad.

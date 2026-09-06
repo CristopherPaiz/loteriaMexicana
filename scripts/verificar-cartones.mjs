@@ -9,7 +9,8 @@
 
 import { buildBoard, buildPlayerBoards, TOTAL_CARDS } from "../src/multiplayer/boards.js";
 import { BOARD_SIZE, GAME_MODES, checkBoard, maskToIndexes } from "../src/multiplayer/modes.js";
-import { checkDigit, createGameCode, createPlayerCode, isValidGameCode, isValidPlayerCode, GAME_CODE_LENGTH, PLAYER_CODE_LENGTH } from "../src/multiplayer/codes.js";
+import { ALL_MARKER_SOURCES, markerFor } from "../src/multiplayer/markers.js";
+import { checkDigit, createGameCode, createPlayerCode, decodeGameCode, isValidGameCode, isValidPlayerCode, GAME_CODE_LENGTH, PLAYER_CODE_LENGTH, MAX_BOARDS } from "../src/multiplayer/codes.js";
 
 let failures = 0;
 
@@ -118,6 +119,65 @@ for (let i = 0; i < 2000; i++) {
 check("detecta el 100 % de los errores de un solo dígito", singleDigitCaught === singleDigitTotal, `${singleDigitCaught}/${singleDigitTotal}`);
 check("detecta más del 85 % de las transposiciones vecinas", transposedCaught / transposedTotal > 0.85, `${((transposedCaught / transposedTotal) * 100).toFixed(1)} %`);
 check("el dígito de control siempre es 0-9", Array.from({ length: 500 }, (_, i) => checkDigit(String(i).padStart(5, "0"))).every((digit) => digit >= 0 && digit <= 9));
+
+// ------------------------------------------------------------
+section("La configuración viaja dentro del código");
+
+let roundTrip = true;
+
+for (const mode of GAME_MODES) {
+  for (let boards = 1; boards <= MAX_BOARDS; boards++) {
+    for (let i = 0; i < 60; i++) {
+      const code = createGameCode({ boardsPerPlayer: boards, modeId: mode.id });
+      const decoded = decodeGameCode(code);
+      if (!decoded || decoded.boardsPerPlayer !== boards || decoded.modeId !== mode.id) roundTrip = false;
+    }
+  }
+}
+
+check("todo código se descifra con los mismos ajustes con que se creó", roundTrip);
+check("el jugador no necesita elegir nada: el código lo trae", decodeGameCode(createGameCode({ boardsPerPlayer: 3, modeId: "ele" }))?.boardsPerPlayer === 3);
+
+// Cambiar un ajuste tiene que dar código nuevo: otra configuración es otra sala.
+let sameCode = 0;
+for (let i = 0; i < 500; i++) {
+  const a = createGameCode({ boardsPerPlayer: 1, modeId: "clasico" });
+  const b = createGameCode({ boardsPerPlayer: 2, modeId: "clasico" });
+  if (a === b) sameCode++;
+}
+check("cambiar de cartones nunca reutiliza el código anterior", sameCode === 0);
+
+let repeated = 0;
+const seenCodes = new Set();
+for (let i = 0; i < 2000; i++) {
+  const code = createGameCode({ boardsPerPlayer: 2, modeId: "linea" });
+  if (seenCodes.has(code)) repeated++;
+  seenCodes.add(code);
+}
+check("2.000 salas seguidas casi nunca repiten código", repeated < 600, `${repeated} repetidos de 2.000`);
+
+// Un código inventado al azar casi nunca cuela.
+let accepted = 0;
+for (let n = 0; n < 1000000; n++) {
+  if (isValidGameCode(String(n).padStart(6, "0"))) accepted++;
+}
+check("menos del 8 % de los números de 6 dígitos son códigos válidos", accepted / 1000000 < 0.08, `${((accepted / 1000000) * 100).toFixed(2)} %`);
+
+// ------------------------------------------------------------
+section("Marcadores");
+
+const piece = markerFor("frijol", "12-3");
+check("el mismo hueco saca siempre el mismo marcador", JSON.stringify(markerFor("frijol", "12-3")) === JSON.stringify(piece));
+check("otro hueco saca otro", JSON.stringify(markerFor("frijol", "12-4")) !== JSON.stringify(piece));
+check("el archivo existe entre los sprites", ALL_MARKER_SOURCES.includes(piece.src), piece.src);
+check("el giro está entre 0 y 360 grados", piece.rotation >= 0 && piece.rotation <= 360);
+
+const mixed = new Set(Array.from({ length: 400 }, (_, i) => markerFor("frijol", `x-${i}`).src.replace(/\d+\.webp$/, "")));
+check("un cartón nunca mezcla tipos", mixed.size === 1, [...mixed].join(", "));
+check("un tipo desconocido cae en el de por defecto", markerFor("mezcla", "1-1").src.includes("frijol"));
+
+const frijoles = new Set(Array.from({ length: 400 }, (_, i) => markerFor("frijol", `y-${i}`).src));
+check("un solo tipo usa sus cinco variantes", frijoles.size === 5, `${frijoles.size} variantes`);
 
 // ------------------------------------------------------------
 section("Modos de juego");

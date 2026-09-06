@@ -117,29 +117,45 @@ button.mp-cell:active {
   height: 100%;
 }
 
-/* El frijol: aparece encima de la carta, no la tapa del todo. */
-.mp-cell__bean {
+/* El marcador: frijol, maíz o corcholata. Cada uno cae con su propio giro,
+   tamaño y desvío, para que un cartón lleno parezca cosas echadas a mano y no
+   una plantilla. */
+.mp-cell__marker {
   position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 58%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, #f07a63 0%, var(--lot-red) 46%, var(--lot-red-deep) 100%);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.35);
-  transform: scale(0);
-  opacity: 0;
-  transition: transform 0.24s var(--lot-ease), opacity 0.18s var(--lot-ease);
+  left: 17%;
+  top: 17%;
+  width: 66%;
+  height: 66%;
+  object-fit: contain;
   pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6));
+  transform: translate(var(--mp-dx, 0), var(--mp-dy, 0)) rotate(var(--mp-rot, 0deg)) scale(var(--mp-scale, 1));
+  animation: mp-drop 260ms var(--lot-ease) both;
 }
 
-.mp-cell.is-marked .mp-cell__bean {
-  transform: scale(1);
-  opacity: 0.92;
+@keyframes mp-drop {
+  from {
+    opacity: 0;
+    transform: translate(var(--mp-dx, 0), var(--mp-dy, 0)) rotate(var(--mp-rot, 0deg)) scale(calc(var(--mp-scale, 1) * 1.55));
+  }
+  to {
+    opacity: 1;
+    transform: translate(var(--mp-dx, 0), var(--mp-dy, 0)) rotate(var(--mp-rot, 0deg)) scale(var(--mp-scale, 1));
+  }
+}
+
+/* Contraste como barra de progreso: la casilla tapada se apaga y la que
+   todavía falta se queda a plena luz. Se oscurece la marcada, no la libre,
+   porque la libre es justo la que hay que poder leer de un vistazo cuando
+   acaban de cantar una carta. Un cartón casi lleno se ve casi apagado. */
+.mp-cell.is-marked {
+  border-color: rgba(0, 0, 0, 0.22);
+  background: #1c2029;
 }
 
 .mp-cell.is-marked .mp-cell__img {
-  filter: brightness(0.62) saturate(0.75);
+  filter: brightness(0.8) saturate(0.72);
 }
 
 /* Estados de verificación (solo lectura, en el panel del anfitrión) */
@@ -158,9 +174,12 @@ button.mp-cell:active {
 
 @media (prefers-reduced-motion: reduce) {
   .mp-cell,
-  .mp-cell__img,
-  .mp-cell__bean {
+  .mp-cell__img {
     transition: none;
+  }
+
+  .mp-cell__marker {
+    animation: none;
   }
 }
 
@@ -721,4 +740,128 @@ button.mp-cell:active {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--lot-text-muted);
+}
+
+/* ---------- Opciones del jugador ---------- */
+
+.mp-options .lot-modal__body,
+.mp-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-confirm {
+  padding: 14px;
+  border: 1px solid var(--lot-red);
+  border-radius: var(--lot-radius);
+  background: rgba(230, 57, 70, 0.12);
+}
+
+.mp-confirm p {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.mp-confirm__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mp-confirm__actions .lot-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+}
+
+/* ---------- Elegir con qué se marca ---------- */
+
+.mp-picker__intro {
+  max-width: 420px;
+  margin: 0 auto 16px;
+  text-align: center;
+  line-height: 1.55;
+  color: var(--lot-text-muted);
+}
+
+.mp-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 0 auto 14px;
+}
+
+.mp-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--lot-border-strong);
+  border-radius: var(--lot-radius);
+  background: var(--lot-surface-2);
+  color: var(--lot-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s var(--lot-ease);
+}
+
+.mp-picker__option:hover {
+  background: var(--lot-surface-3);
+  border-color: var(--lot-blue);
+}
+
+.mp-picker__option:active {
+  transform: scale(0.99);
+}
+
+.mp-picker__option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lot-surface-0), 0 0 0 5px var(--lot-amber);
+}
+
+/* Tres muestras solapadas, cada una con su giro: se ve de un golpe cómo
+   quedará el cartón. */
+.mp-picker__samples {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 92px;
+  height: 56px;
+}
+
+.mp-picker__samples img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6));
+  transform: rotate(var(--mp-rot, 0deg)) scale(var(--mp-scale, 1));
+}
+
+.mp-picker__samples img + img {
+  margin-left: -18px;
+}
+
+.mp-picker__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mp-picker__text strong {
+  font-size: 1.05rem;
+}
+
+.mp-picker__text span {
+  font-size: 0.82rem;
+  color: var(--lot-text-muted);
+}
+
+.mp-picker__leave {
+  max-width: 420px;
+  margin: 18px auto 0;
 }

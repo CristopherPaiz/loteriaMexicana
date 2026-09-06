@@ -13,10 +13,14 @@
 
 import { pickUnique, randomFromSeed } from "./rng.js";
 import { BOARD_SIZE } from "./modes.js";
+import { MAX_BOARDS, MIN_BOARDS } from "./codes.js";
 
 export const TOTAL_CARDS = 54;
-export const MIN_BOARDS_PER_PLAYER = 1;
-export const MAX_BOARDS_PER_PLAYER = 3;
+
+// Los límites viven en codes.js porque el código de partida los codifica:
+// aquí solo se reexportan para no tener dos verdades.
+export const MIN_BOARDS_PER_PLAYER = MIN_BOARDS;
+export const MAX_BOARDS_PER_PLAYER = MAX_BOARDS;
 
 const ALL_CARDS = Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1);
 
