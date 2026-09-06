@@ -1,6 +1,5 @@
-import { useEffect } from "react";
 import PropTypes from "prop-types";
-import useBackToClose from "../../multiplayer/useBackToClose";
+import useModalDismiss from "../../multiplayer/useModalDismiss";
 
 /**
  * Confirmación como modal encima del modal que la pidió.
@@ -9,18 +8,7 @@ import useBackToClose from "../../multiplayer/useBackToClose";
  * hacia abajo; una decisión de sí o no merece quedarse quieta y encima.
  */
 const ConfirmModal = ({ isOpen, title, children, confirmText, cancelText = "Mejor no", onConfirm, onCancel, tone = "danger" }) => {
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") onCancel();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onCancel]);
-
-  useBackToClose(isOpen, onCancel);
+  useModalDismiss(isOpen, onCancel);
 
   if (!isOpen) return null;
 

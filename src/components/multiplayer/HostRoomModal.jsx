@@ -5,7 +5,7 @@ import QrCode from "./QrCode";
 import JoinForm from "./JoinForm";
 import VerifyPanel from "./VerifyPanel";
 import ConfirmModal from "./ConfirmModal";
-import useBackToClose from "../../multiplayer/useBackToClose";
+import useModalDismiss from "../../multiplayer/useModalDismiss";
 import { createGameCode, decodeGameCode, formatCode, MAX_BOARDS } from "../../multiplayer/codes";
 import { GAME_MODES, getMode } from "../../multiplayer/modes";
 import { buildJoinUrl } from "../../multiplayer/session";
@@ -38,21 +38,12 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, on
   }, [isOpen, initialView]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    closeRef.current?.focus();
-
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+    if (isOpen) closeRef.current?.focus();
+  }, [isOpen]);
 
   useEffect(() => () => clearTimeout(copyTimerRef.current), []);
 
-  useBackToClose(isOpen, onClose);
+  useModalDismiss(isOpen, onClose);
 
   const joinUrl = useMemo(() => (room ? buildJoinUrl(room.gameCode) : ""), [room]);
   const mode = getMode(room?.modeId);

@@ -1,10 +1,10 @@
 import PropTypes from "prop-types";
 import { FaCheck, FaTimes } from "react-icons/fa";
-import useBackToClose from "../multiplayer/useBackToClose";
+import useModalDismiss from "../multiplayer/useModalDismiss";
 
 const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Confirmar", cancelText = "Cancelar", showCancel = true }) => {
   // El botón "atrás" del teléfono cierra el modal, no la app.
-  useBackToClose(isOpen, () => onCancel?.());
+  useModalDismiss(isOpen, () => onCancel?.());
 
   if (!isOpen) return null;
 

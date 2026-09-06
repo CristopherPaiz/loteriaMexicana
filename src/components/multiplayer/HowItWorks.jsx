@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { FaTimes, FaCrown, FaMobileAlt, FaShieldAlt, FaListUl, FaHandPointUp } from "react-icons/fa";
 import { GAME_MODES } from "../../multiplayer/modes";
-import useBackToClose from "../../multiplayer/useBackToClose";
+import useModalDismiss from "../../multiplayer/useModalDismiss";
 
 /**
  * Explicación, como modal encima de donde se pidió.
@@ -15,19 +15,10 @@ const HowItWorks = ({ isOpen, onClose }) => {
   const closeRef = useRef(null);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (isOpen) closeRef.current?.focus();
+  }, [isOpen]);
 
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    closeRef.current?.focus();
-
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  useBackToClose(isOpen, onClose);
+  useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 

@@ -4,7 +4,7 @@ import { FaQuestionCircle, FaSignOutAlt, FaTrophy, FaTimes, FaEraser, FaDice } f
 import BoardGrid from "./BoardGrid";
 import ConfirmModal from "./ConfirmModal";
 import HowItWorks from "./HowItWorks";
-import useBackToClose from "../../multiplayer/useBackToClose";
+import useModalDismiss from "../../multiplayer/useModalDismiss";
 import { buildPlayerBoards } from "../../multiplayer/boards";
 import { createPlayerCode, decodeGameCode, formatCode } from "../../multiplayer/codes";
 import { getMode } from "../../multiplayer/modes";
@@ -111,7 +111,7 @@ const PlayerScreen = ({ route, onExit }) => {
     if (!session && !route.gameCode) onExit();
   }, [session, route.gameCode, onExit]);
 
-  useBackToClose(showWin, closeWin);
+  useModalDismiss(showWin, closeWin);
 
   if (!session) return null;
 

@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
-import useBackToClose from "../multiplayer/useBackToClose";
+import useModalDismiss from "../multiplayer/useModalDismiss";
 import { FaTimes, FaPrint, FaUsers, FaQuestionCircle } from "react-icons/fa";
 
 const TIME_MIN = 3;
@@ -46,22 +46,15 @@ const RightPanel = ({
         setShowMenu(false);
       }
     };
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") setShowMenu(false);
-    };
-
+    // mousedown para detectar el clic antes de que lo procesen otros elementos
     // mousedown para detectar el clic antes de que lo procesen otros elementos
     document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
     closeButtonRef.current?.focus();
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setShowMenu, showMenu]);
 
-  useBackToClose(showMenu, () => setShowMenu(false));
+  useModalDismiss(showMenu, () => setShowMenu(false));
 
   return (
     <>
