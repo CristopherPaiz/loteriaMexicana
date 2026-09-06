@@ -117,6 +117,19 @@ body {
   z-index: 10;
 }
 
+/* Mientras no hay cartas cantadas, la portada: el título ocupa el sitio de la
+   barra y crece. En cuanto sale la primera carta vuelve a su tamaño normal. */
+.loteria-header.is-hero {
+  padding-top: 22px;
+  padding-bottom: 4px;
+  gap: 10px;
+}
+
+.loteria-header.is-hero .title {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  letter-spacing: -0.01em;
+}
+
 .top-panel {
   flex: none;
   display: flex;
@@ -127,6 +140,12 @@ body {
   position: relative;
   cursor: pointer;
   z-index: 10;
+  transition: height 0.35s var(--lot-ease);
+}
+
+.top-panel.is-empty {
+  height: 0;
+  cursor: default;
 }
 
 /* Zona elástica: contiene el panel principal y el contador. */
@@ -173,17 +192,121 @@ body {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
-.game-over {
+/* ------------------------------------------------------------
+   Pantalla de fin de partida
+   ------------------------------------------------------------ */
+
+.lot-end {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   position: relative;
   z-index: 10;
+}
+
+.lot-end__head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.lot-end__badge {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  color: #fff;
+  background: linear-gradient(160deg, var(--lot-green) 0%, var(--lot-green-deep) 100%);
+  box-shadow: 0 10px 30px rgba(42, 157, 143, 0.38);
+  animation: lot-pop 520ms var(--lot-ease) both;
+}
+
+.lot-end__title {
+  margin: 0;
+  font-size: clamp(1.35rem, 6vw, 2rem);
+  line-height: 1.15;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.lot-end__subtitle {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* El listado completo va aquí y es lo único que hace scroll. */
+.lot-end__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius-lg);
+  background: rgba(16, 18, 25, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--lot-shadow-md);
+}
+
+.lot-end__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lot-end__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.lot-end__foot {
+  flex: none;
+}
+
+.lot-end .lot-history__item {
+  animation: lot-rise 340ms var(--lot-ease) both;
+}
+
+@keyframes lot-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lot-end__badge,
+  .lot-end .lot-history__item {
+    animation: none;
+  }
+}
+
+/* En pantallas bajas el subtítulo estorba más de lo que aporta. */
+@media (max-height: 620px) {
+  .lot-end__subtitle {
+    display: none;
+  }
+
+  .lot-end__badge {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
 }
 
 .loteria-progress-pill {
@@ -219,6 +342,40 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Hueco cuando una imagen de carta no llega ni tras los reintentos: mejor un
+   número legible que el icono de imagen rota del navegador. */
+.lot-card-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 40px;
+  border-radius: inherit;
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 8px, rgba(255, 255, 255, 0.02) 8px 16px);
+  color: var(--lot-text-faint);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Copia de la carta que se cae del tope: se coloca en su última posición y se
+   funde ahí, porque su nodo original ya no existe. */
+.lot-mini-ghost {
+  position: fixed;
+  z-index: 9;
+  margin: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  animation: lot-mini-out 480ms var(--lot-ease) forwards;
+}
+
+@keyframes lot-mini-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
 }
 
 /* ------------------------------------------------------------

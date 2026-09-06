@@ -46,7 +46,20 @@ const LoadingScreen = ({ onComplete, assets }) => {
     const loadAsset = async (src) => {
       try {
         const response = await fetch(src);
+        // Sin esta comprobación, la página de error de un 404 se guardaba como
+        // blob y la carta salía rota para siempre. Mejor no cachear nada: quien
+        // la use caerá en la URL original.
+        if (!response.ok) {
+          console.error(`Asset no disponible (${response.status}): ${src}`);
+          return src;
+        }
+
         const blob = await response.blob();
+        if (blob.size === 0) {
+          console.error(`Asset vacío: ${src}`);
+          return src;
+        }
+
         cache[src] = URL.createObjectURL(blob);
         return src;
       } catch (error) {

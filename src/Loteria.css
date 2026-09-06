@@ -86,6 +86,49 @@
   margin: 0;
   overflow: visible;
   z-index: 5;
+  cursor: pointer;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Microanimación al tocar la carta: encoge al pausar, rebota al reanudar. */
+.loteria-card-container.is-pause {
+  animation: lot-card-pause 420ms var(--lot-ease);
+}
+
+.loteria-card-container.is-resume {
+  animation: lot-card-resume 420ms var(--lot-ease);
+}
+
+@keyframes lot-card-pause {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.945);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes lot-card-resume {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.045);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loteria-card-container.is-pause,
+  .loteria-card-container.is-resume {
+    animation: none;
+  }
 }
 
 @media (max-width: 768px) {

@@ -7,6 +7,8 @@ import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 import CountdownTimer from "./components/CountdownTimer";
 import LoadingScreen from "./components/LoadingScreen";
 import GameModal from "./components/GameModal";
+import GameOverScreen from "./components/GameOverScreen";
+import CardImage from "./components/CardImage";
 import "./Loteria.css";
 
 const TIME_BETWEEN_CARDS = 5;
@@ -24,11 +26,14 @@ const DEFAULT_VOICE = "mujer";
 const cardImageUrls = (type) => Array.from({ length: CARD_LENGTH }, (_, i) => `/${type}WEBP/${i + 1}.webp`);
 const voiceSoundUrls = (voice) => Array.from({ length: CARD_LENGTH }, (_, i) => `/sounds/${voice}/${i + 1}. ${voice}.mp3`);
 
+const END_SOUND = "/sounds/sounds/0. aplausos cierre.mp3";
+
 const BASE_SOUNDS = [
   "/sounds/sounds/0. barajar.mp3",
   "/sounds/sounds/0. cambio carta.mp3",
   "/sounds/sounds/0. play.mp3",
   "/sounds/sounds/0. pause.mp3",
+  END_SOUND,
   `/sounds/${DEFAULT_VOICE}/1. ${DEFAULT_VOICE} apertura.mp3`,
 ];
 
@@ -310,6 +315,7 @@ const Loteria = () => {
       setIsPlaying(false);
       setGameOver(true);
       localStorage.removeItem(STORAGE_KEY);
+      playAudioImmediate(END_SOUND);
       return;
     }
 
@@ -552,36 +558,39 @@ const Loteria = () => {
       </div>
 
       {/* Cabecera en flujo normal: título arriba, contador debajo y las
-          minicartas al final. Nada se superpone. */}
-      <header className="loteria-header">
-        <h1 className="title">Lotería Mexicana</h1>
-        {pastCardsAll.length > 0 && (
-          <div className="loteria-progress-pill">
-            {pastCardsAll.length} / {CARD_LENGTH} · quedan {deck.length}
-          </div>
-        )}
-      </header>
+          minicartas al final. Nada se superpone. Al terminar la partida se
+          retiran para dejarle la pantalla completa al resumen. */}
+      {!gameOver && (
+        <>
+          <header className={`loteria-header ${pastCardsAll.length === 0 ? "is-hero" : ""}`}>
+            <h1 className="title">Lotería Mexicana</h1>
+            {pastCardsAll.length > 0 && (
+              <div className="loteria-progress-pill">
+                {pastCardsAll.length} / {CARD_LENGTH} · quedan {deck.length}
+              </div>
+            )}
+          </header>
 
-      <TopPanel
-        pastCards={pastCards}
-        typeCard={typeCard}
-        displayedCard={displayedCard}
-        pastCardsAll={pastCardsAll}
-        getCardImageUrl={getCardImageUrl}
-      />
+          <TopPanel
+            pastCards={pastCards}
+            typeCard={typeCard}
+            displayedCard={displayedCard}
+            pastCardsAll={pastCardsAll}
+            getCardImageUrl={getCardImageUrl}
+          />
+        </>
+      )}
+
       {gameOver ? (
-        <div className="game-over">
-          <h2>Se han acabado todas las cartas</h2>
-          <button
-            className="lot-btn lot-btn--start"
-            onClick={() => {
-              setIsReset(true);
-              startGame();
-            }}
-          >
-            Reiniciar juego
-          </button>
-        </div>
+        <GameOverScreen
+          cards={[...pastCardsAll].reverse()}
+          typeCard={typeCard}
+          getCardImageUrl={getCardImageUrl}
+          onRestart={() => {
+            setIsReset(true);
+            startGame();
+          }}
+        />
       ) : (
         <>
           <div className="loteria-stage">
@@ -602,29 +611,31 @@ const Loteria = () => {
             {/* Contador como componente independiente */}
             {isPlaying && !isPaused && <CountdownTimer countdown={countdown} totalTime={time} />}
           </div>
-
-          <RightPanel
-            showMenu={showMenu}
-            voices={VOICES}
-            activeVoice={activeVoice}
-            handleVoiceChange={handleVoiceChange}
-            setShowMenu={setShowMenu}
-            setTime={setTime}
-            time={time}
-            typeCard={typeCard}
-            setTypeCard={setTypeCard}
-            volumeBoost={volumeBoost}
-            onVolumeChangeRequest={handleVolumeChangeRequest}
-            dimLevel={dimLevel}
-            setDimLevel={setDimLevel}
-            onOpenGenerator={() => {
-              setShowMenu(false);
-              setIsModalOpen(true);
-            }}
-          />
-          {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
         </>
       )}
+
+      {/* Los ajustes siguen disponibles también al terminar la partida. */}
+      <RightPanel
+        showMenu={showMenu}
+        voices={VOICES}
+        activeVoice={activeVoice}
+        handleVoiceChange={handleVoiceChange}
+        setShowMenu={setShowMenu}
+        setTime={setTime}
+        time={time}
+        typeCard={typeCard}
+        setTypeCard={setTypeCard}
+        volumeBoost={volumeBoost}
+        onVolumeChangeRequest={handleVolumeChangeRequest}
+        dimLevel={dimLevel}
+        setDimLevel={setDimLevel}
+        onOpenGenerator={() => {
+          setShowMenu(false);
+          setIsModalOpen(true);
+        }}
+      />
+      {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
+
       <audio ref={audioRef} />
 
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -658,8 +669,10 @@ const Loteria = () => {
         {savedGameState && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10px" }}>
             <p style={{ fontSize: "0.9rem", marginBottom: "10px" }}>Última carta:</p>
-            <img
-              src={getCardImageUrl(savedGameState.displayedCard)}
+            <CardImage
+              card={savedGameState.displayedCard}
+              typeCard={savedGameState.typeCard || typeCard}
+              getCardImageUrl={getCardImageUrl}
               alt="Última carta"
               style={{ width: "80px", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0,0,0,0.3)" }}
             />
