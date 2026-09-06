@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
-import { FaTimes, FaPrint } from "react-icons/fa";
+import { FaTimes, FaPrint, FaUsers, FaQuestionCircle } from "react-icons/fa";
 
 const TIME_MIN = 3;
 const TIME_MAX = 10;
@@ -22,6 +22,9 @@ const RightPanel = ({
   typeCard,
   setTypeCard,
   onOpenGenerator,
+  onOpenMultiplayer,
+  onOpenHelp,
+  roomCode = null,
   cardAnimations,
   cardAnimation,
   setCardAnimation,
@@ -202,6 +205,14 @@ const RightPanel = ({
         </div>
 
         <footer className="lot-panel__footer">
+          <button type="button" className="lot-btn lot-btn--next lot-btn--block" onClick={onOpenMultiplayer}>
+            <FaUsers /> {roomCode ? "Sala multijugador" : "Jugar en varios teléfonos"}
+          </button>
+
+          <button type="button" className="lot-btn lot-btn--ghost lot-btn--block" onClick={onOpenHelp}>
+            <FaQuestionCircle /> Cómo funciona
+          </button>
+
           <button type="button" className="lot-btn lot-btn--danger lot-btn--block" onClick={onOpenGenerator}>
             <FaPrint /> Generador de cartones
           </button>
@@ -222,6 +233,9 @@ RightPanel.propTypes = {
   typeCard: PropTypes.string.isRequired,
   setTypeCard: PropTypes.func.isRequired,
   onOpenGenerator: PropTypes.func.isRequired,
+  onOpenMultiplayer: PropTypes.func.isRequired,
+  onOpenHelp: PropTypes.func.isRequired,
+  roomCode: PropTypes.string,
   cardAnimations: PropTypes.arrayOf(
     PropTypes.shape({
       value: PropTypes.string.isRequired,

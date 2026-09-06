@@ -1,0 +1,724 @@
+/* ============================================================
+   Multijugador: pantallas de jugador, sala del anfitrión,
+   verificación y explicación.
+
+   Reutiliza los tokens y los controles de ui.css (.lot-btn, .lot-segmented,
+   .lot-section, .lot-modal...). Aquí solo vive lo propio del multijugador.
+   ============================================================ */
+
+/* ---------- Pantalla completa (jugador / explicación) ---------- */
+
+.mp-screen {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--lot-surface-0);
+  color: var(--lot-text);
+  overflow: hidden;
+}
+
+.mp-screen__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px calc(12px - 2px);
+  border-bottom: 1px solid var(--lot-border);
+  background: var(--lot-surface-1);
+}
+
+.mp-screen__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.mp-back {
+  flex: none;
+  padding: 8px 12px;
+}
+
+.mp-screen__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 14px calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+/* El cartón no hace scroll: se encoge hasta caber, como la carta central. */
+.mp-screen__body--board {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+.mp-screen__foot {
+  flex: none;
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--lot-border);
+  background: var(--lot-surface-1);
+}
+
+/* ---------- Cartón 4x4 ---------- */
+
+/* Mismo truco que la carta central: la proporción manda y el alto se ata al
+   ancho de pantalla, así nunca desborda ni se aplasta. */
+.mp-board {
+  display: grid;
+  grid-template-columns: repeat(var(--mp-board-cols, 4), minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: clamp(4px, 1.4vw, 9px);
+  aspect-ratio: 440 / 700;
+  height: min(100%, calc((100vw - 28px) * 700 / 440));
+  width: auto;
+  max-height: 100%;
+}
+
+.mp-board--compact {
+  width: min(100%, 230px);
+  height: auto;
+  margin: 0 auto;
+  gap: 4px;
+}
+
+.mp-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: var(--lot-surface-2);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s var(--lot-ease), transform 0.15s var(--lot-ease);
+}
+
+button.mp-cell:active {
+  transform: scale(0.95);
+}
+
+.mp-cell__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: filter 0.22s var(--lot-ease), opacity 0.22s var(--lot-ease);
+}
+
+.mp-cell .lot-card-fallback {
+  width: 100%;
+  height: 100%;
+}
+
+/* El frijol: aparece encima de la carta, no la tapa del todo. */
+.mp-cell__bean {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #f07a63 0%, var(--lot-red) 46%, var(--lot-red-deep) 100%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 -2px 6px rgba(0, 0, 0, 0.35);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.24s var(--lot-ease), opacity 0.18s var(--lot-ease);
+  pointer-events: none;
+}
+
+.mp-cell.is-marked .mp-cell__bean {
+  transform: scale(1);
+  opacity: 0.92;
+}
+
+.mp-cell.is-marked .mp-cell__img {
+  filter: brightness(0.62) saturate(0.75);
+}
+
+/* Estados de verificación (solo lectura, en el panel del anfitrión) */
+.mp-cell.is-winning {
+  border-color: var(--lot-green);
+  box-shadow: 0 0 0 1px var(--lot-green);
+}
+
+.mp-cell.is-missing {
+  border-color: var(--lot-red);
+}
+
+.mp-cell.is-missing .mp-cell__img {
+  filter: grayscale(1) brightness(0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-cell,
+  .mp-cell__img,
+  .mp-cell__bean {
+    transition: none;
+  }
+}
+
+/* ---------- Formularios y códigos OTP ---------- */
+
+.mp-join {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-field__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--lot-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mp-otp {
+  width: 100%;
+  padding: 14px 10px;
+  border: 1px solid var(--lot-border-strong);
+  border-radius: var(--lot-radius);
+  background: var(--lot-surface-2);
+  color: var(--lot-text);
+  font-size: clamp(1.8rem, 9vw, 2.6rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-indent: 0.28em; /* compensa el espaciado del último dígito */
+}
+
+.mp-otp::placeholder {
+  color: var(--lot-text-faint);
+}
+
+.mp-otp:focus-visible {
+  outline: 2px solid var(--lot-blue);
+  outline-offset: 2px;
+}
+
+.mp-otp--sm {
+  font-size: clamp(1.5rem, 7vw, 2rem);
+  padding: 12px 10px;
+}
+
+/* ---------- Cabecera del jugador ---------- */
+
+.mp-screen__head--player {
+  gap: 14px;
+}
+
+.mp-identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.mp-identity--muted {
+  margin-left: auto;
+  text-align: right;
+  opacity: 0.65;
+}
+
+.mp-identity__label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--lot-text-muted);
+}
+
+.mp-identity__code {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.mp-identity--muted .mp-identity__code {
+  font-size: 1rem;
+}
+
+.mp-leave {
+  flex: none;
+  padding: 8px 10px;
+}
+
+.mp-mode-banner {
+  flex: none;
+  margin: 0;
+  padding: 8px 14px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--lot-text-muted);
+  background: var(--lot-surface-1);
+  border-bottom: 1px solid var(--lot-border);
+}
+
+.mp-mode-banner strong {
+  color: var(--lot-text);
+}
+
+.mp-board-tabs {
+  flex: none;
+  margin: 10px 14px 0;
+}
+
+.mp-board-tabs__count {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Modal de "¡Lotería!" ---------- */
+
+.mp-win__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.mp-win__code {
+  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--lot-text);
+  animation: lot-pop 460ms var(--lot-ease) both;
+}
+
+/* ---------- Sala del anfitrión ---------- */
+
+.mp-room__tabs {
+  margin: 0 18px;
+}
+
+.mp-room__code {
+  align-items: center;
+  text-align: center;
+}
+
+.mp-room__digits {
+  display: block;
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+}
+
+.mp-qr {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border-radius: var(--lot-radius);
+  background: #ffffff;
+  width: fit-content;
+  margin: 4px auto 0;
+}
+
+.mp-qr canvas {
+  display: block;
+  width: min(184px, 48vw);
+  height: auto;
+  image-rendering: pixelated; /* el QR se lee mejor sin suavizado */
+}
+
+.mp-room__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Los dos caben en una fila incluso en pantallas estrechas. */
+.mp-room__actions .lot-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 0.85rem;
+}
+
+.mp-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  color: var(--lot-text-muted);
+}
+
+.mp-empty p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Pastilla de la cabecera del anfitrión: atajo a verificar. */
+.mp-room-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid var(--lot-border-strong);
+  border-radius: 999px;
+  background: var(--lot-surface-2);
+  color: var(--lot-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s var(--lot-ease);
+}
+
+.mp-room-pill:hover {
+  background: var(--lot-surface-3);
+}
+
+.mp-room-pill__cta {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--lot-green);
+  color: #fff;
+}
+
+/* ---------- Verificación ---------- */
+
+.mp-verify {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mp-verify__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-verify__results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mp-verdict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--lot-radius);
+  border: 1px solid var(--lot-border);
+  animation: lot-rise 300ms var(--lot-ease) both;
+}
+
+.mp-verdict svg {
+  flex: none;
+  font-size: 1.9rem;
+}
+
+.mp-verdict div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mp-verdict strong {
+  font-size: 1.05rem;
+}
+
+.mp-verdict span {
+  font-size: 0.82rem;
+  color: var(--lot-text-muted);
+}
+
+.mp-verdict.is-win {
+  background: rgba(42, 157, 143, 0.16);
+  border-color: var(--lot-green);
+  color: var(--lot-text);
+}
+
+.mp-verdict.is-win svg {
+  color: var(--lot-green);
+}
+
+.mp-verdict.is-fail {
+  background: rgba(230, 57, 70, 0.14);
+  border-color: var(--lot-red);
+}
+
+.mp-verdict.is-fail svg {
+  color: var(--lot-red);
+}
+
+.mp-verify__board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius);
+  background: var(--lot-surface-2);
+}
+
+.mp-verify__board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mp-verify__board-head h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.mp-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--lot-surface-3);
+  color: var(--lot-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.mp-tag--win {
+  background: var(--lot-green);
+  color: #fff;
+}
+
+/* ---------- Explicación ---------- */
+
+.mp-doc {
+  max-width: 620px;
+  margin: 0 auto 26px;
+  line-height: 1.6;
+}
+
+.mp-doc__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mp-doc__title svg {
+  color: var(--lot-amber);
+}
+
+.mp-doc p {
+  margin: 0 0 12px;
+  color: var(--lot-text-muted);
+}
+
+.mp-doc strong {
+  color: var(--lot-text);
+}
+
+.mp-doc__list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--lot-text-muted);
+}
+
+.mp-doc__list li {
+  margin-bottom: 8px;
+}
+
+.mp-doc__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--lot-radius);
+  border: 1px solid var(--lot-border);
+  background: var(--lot-surface-1);
+  font-size: 0.88rem;
+}
+
+.mp-doc__note svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--lot-amber);
+}
+
+.mp-doc__note--warn {
+  border-color: rgba(244, 162, 97, 0.4);
+  color: #f6d3ad;
+}
+
+.mp-doc__modes {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-doc__mode {
+  padding: 12px 14px;
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius);
+  background: var(--lot-surface-1);
+}
+
+.mp-doc__mode dt {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mp-doc__mode dd {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--lot-text-muted);
+}
+
+/* ---------- Pantallas bajas ---------- */
+
+@media (max-height: 660px) {
+  .mp-screen__head {
+    padding: 8px 12px;
+  }
+
+  .mp-identity__code {
+    font-size: 1.05rem;
+  }
+
+  .mp-mode-banner {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+  }
+
+  .mp-board-tabs {
+    margin-top: 6px;
+  }
+}
+
+@media (max-height: 560px) {
+  .mp-mode-banner {
+    display: none;
+  }
+}
+
+/* ---------- Entrada al multijugador desde la pantalla de inicio ---------- */
+
+/* Comparte fila con "Iniciar juego": elegir solo o acompañado se decide
+   en el mismo sitio, sin robarle alto a la carta. */
+.lot-btn--multi {
+  --lot-btn-bg: rgba(69, 133, 196, 0.14);
+  --lot-btn-bg-hover: rgba(69, 133, 196, 0.26);
+  --lot-btn-ring: rgba(69, 133, 196, 0.5);
+  color: var(--lot-text);
+  min-height: 56px;
+}
+
+@media (max-width: 768px) {
+  .lot-actions .lot-btn--multi {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+  }
+}
+
+/* Solo en pantallas diminutas se queda con el icono: un botón sin texto es
+   justo lo que hace que nadie encuentre el multijugador. */
+@media (max-width: 340px) {
+  .lot-actions .lot-btn--multi {
+    width: 56px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .lot-actions .lot-btn--multi .lot-btn__label {
+    display: none;
+  }
+}
+
+/* ---------- Elegir papel: anfitrión o jugador ---------- */
+
+.mp-empty__intro {
+  margin-bottom: 4px;
+}
+
+.mp-role {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--lot-border-strong);
+  border-radius: var(--lot-radius);
+  background: var(--lot-surface-2);
+  color: var(--lot-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s var(--lot-ease);
+}
+
+.mp-role:hover {
+  background: var(--lot-surface-3);
+  border-color: var(--lot-border-strong);
+}
+
+.mp-role:active {
+  transform: scale(0.99);
+}
+
+.mp-role:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lot-surface-0), 0 0 0 5px var(--lot-amber);
+}
+
+.mp-role > svg {
+  flex: none;
+  font-size: 1.6rem;
+  color: var(--lot-blue);
+}
+
+.mp-role--host {
+  border-color: rgba(244, 162, 97, 0.45);
+  background: rgba(244, 162, 97, 0.1);
+}
+
+.mp-role--host:hover {
+  background: rgba(244, 162, 97, 0.18);
+}
+
+.mp-role--host > svg {
+  color: var(--lot-amber);
+}
+
+.mp-role__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mp-role__text strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mp-role__text span {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--lot-text-muted);
+}

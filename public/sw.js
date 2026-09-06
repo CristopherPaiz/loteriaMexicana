@@ -7,7 +7,7 @@
  * Sube CACHE_VERSION en cada deploy que cambie assets estáticos de /public.
  */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const SHELL_CACHE = `loteria-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `loteria-assets-${CACHE_VERSION}`;
 

@@ -9,6 +9,10 @@ import LoadingScreen from "./components/LoadingScreen";
 import GameModal from "./components/GameModal";
 import GameOverScreen from "./components/GameOverScreen";
 import CardImage from "./components/CardImage";
+import HostRoomModal from "./components/multiplayer/HostRoomModal";
+import { loadHostRoom, saveHostRoom, goTo } from "./multiplayer/session";
+import { getMode } from "./multiplayer/modes";
+import { formatCode } from "./multiplayer/codes";
 import "./Loteria.css";
 
 const TIME_BETWEEN_CARDS = 5;
@@ -94,6 +98,12 @@ const Loteria = () => {
   const [showVolumeWarning, setShowVolumeWarning] = useState(false);
   const [pendingVolume, setPendingVolume] = useState(null);
   const [savedGameState, setSavedGameState] = useState(null);
+
+  // Sala multijugador: el anfitrión es este mismo dispositivo, así que vive
+  // junto al resto del estado de la partida.
+  const [room, setRoom] = useState(() => loadHostRoom());
+  const [showRoom, setShowRoom] = useState(false);
+  const [roomView, setRoomView] = useState("sala");
 
   // Audio Context Refs
   const audioContextRef = useRef(null);
@@ -545,6 +555,22 @@ const Loteria = () => {
     return assetCache[originalUrl] || originalUrl;
   };
 
+  // El modo puede traer su propio ritmo (Express canta cada 3 s). Se aplica al
+  // elegirlo, pero el anfitrión sigue mandando: el deslizador lo sobrescribe.
+  const handleRoomChange = useCallback((next) => {
+    setRoom(next);
+    saveHostRoom(next);
+
+    const modeTime = getMode(next.modeId).time;
+    if (modeTime) setTime(modeTime);
+  }, []);
+
+  const openRoom = useCallback((view) => {
+    setRoomView(view);
+    setShowRoom(true);
+    setShowMenu(false);
+  }, []);
+
   return (
     <div className="loteria-container loteria-modern">
       {isLoading && (
@@ -581,6 +607,15 @@ const Loteria = () => {
               <div className="loteria-progress-pill">
                 {pastCardsAll.length} / {CARD_LENGTH} · quedan {deck.length}
               </div>
+            )}
+
+            {/* Con sala abierta, el acceso a verificar tiene que estar a un
+                toque: es lo que hace el anfitrión cuando alguien grita. */}
+            {room && (
+              <button type="button" className="mp-room-pill" onClick={() => openRoom("verificar")}>
+                Sala {formatCode(room.gameCode)} · {getMode(room.modeId).label}
+                <span className="mp-room-pill__cta">Verificar</span>
+              </button>
             )}
           </header>
 
@@ -620,6 +655,7 @@ const Loteria = () => {
               nextImageUrl={nextImageUrl}
               getCardImageUrl={getCardImageUrl}
               cardAnimation={cardAnimation}
+              onOpenMultiplayer={() => openRoom("sala")}
             />
 
             {/* Contador como componente independiente */}
@@ -650,12 +686,27 @@ const Loteria = () => {
           setShowMenu(false);
           setIsModalOpen(true);
         }}
+        onOpenMultiplayer={() => openRoom("sala")}
+        onOpenHelp={() => goTo("/como-funciona")}
+        roomCode={room?.gameCode ?? null}
       />
       {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
 
       <audio ref={audioRef} />
 
       <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      <HostRoomModal
+        isOpen={showRoom}
+        initialView={roomView}
+        onClose={() => setShowRoom(false)}
+        room={room}
+        onRoomChange={handleRoomChange}
+        onJoinAsPlayer={() => goTo("/jugador")}
+        drawnCards={pastCardsAll}
+        typeCard={typeCard}
+        onOpenHelp={() => goTo("/como-funciona")}
+      />
 
       {/* Modal de confirmación para detener juego */}
       <GameModal

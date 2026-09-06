@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import Card from "./Card";
-import { FaPlay, FaForward, FaUndo } from "react-icons/fa";
+import { FaPlay, FaForward, FaUndo, FaUsers } from "react-icons/fa";
 
 const MainPanel = ({
   currentCard,
@@ -15,6 +15,7 @@ const MainPanel = ({
   nextImageUrl,
   getCardImageUrl,
   cardAnimation,
+  onOpenMultiplayer,
 }) => (
   <div className="main-panel">
     {/* Hueco elástico: la carta se queda con el espacio sobrante */}
@@ -50,10 +51,20 @@ const MainPanel = ({
           </button>
         </>
       ) : (
-        <button type="button" className="lot-btn lot-btn--start is-idle" onClick={startGame}>
-          <FaPlay />
-          <span className="lot-btn__label">Iniciar juego</span>
-        </button>
+        <>
+          <button type="button" className="lot-btn lot-btn--start is-idle" onClick={startGame}>
+            <FaPlay />
+            <span className="lot-btn__label">Iniciar juego</span>
+          </button>
+
+          {/* El multijugador vivía solo dentro de los ajustes y no lo
+              encontraba nadie. Aquí, junto a "Iniciar", es donde se decide
+              si se juega solo o con más gente. */}
+          <button type="button" className="lot-btn lot-btn--multi" onClick={onOpenMultiplayer}>
+            <FaUsers />
+            <span className="lot-btn__label">Multijugador</span>
+          </button>
+        </>
       )}
     </div>
   </div>
@@ -74,4 +85,5 @@ MainPanel.propTypes = {
   nextImageUrl: PropTypes.string.isRequired,
   getCardImageUrl: PropTypes.func.isRequired,
   cardAnimation: PropTypes.string.isRequired,
+  onOpenMultiplayer: PropTypes.func.isRequired,
 };
