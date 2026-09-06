@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import PropTypes from "prop-types";
+import useBackToClose from "../multiplayer/useBackToClose";
 
 const configuracionDeCartas = {
   10: { repeticiones: { 2: 2, 52: 3 }, total: 160 },
@@ -385,6 +386,8 @@ const LoteriaCardGenerator = ({ isOpen, onClose }) => {
         return null;
     }
   };
+
+  useBackToClose(isOpen, onClose);
 
   if (!isOpen) return null;
 

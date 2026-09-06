@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Loteria from "./Loteria";
 import PlayerScreen from "./components/multiplayer/PlayerScreen";
-import HowItWorks from "./components/multiplayer/HowItWorks";
 import { goTo, parseRoute, ROUTES } from "./multiplayer/session";
 
 // Layout, botones y panel lateral viven en src/ui.css (importado en main.jsx).
@@ -18,16 +17,12 @@ function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Volver al paso anterior si lo hay; si se entró directo por enlace, al inicio.
-  const goBack = () => {
-    if (window.history.length > 1) window.history.back();
-    else goTo("/");
-  };
-
-  if (route.name === ROUTES.help) return <HowItWorks onBack={goBack} />;
+  // #/unirse es el inicio con el modal de entrada ya abierto: unirse no
+  // merece una pantalla propia, es un campo y un botón.
+  if (route.name === ROUTES.join) return <Loteria openJoin />;
 
   if (route.name === ROUTES.player) {
-    return <PlayerScreen route={route} onExit={() => goTo("/")} onOpenHelp={() => goTo("/como-funciona")} />;
+    return <PlayerScreen route={route} onExit={() => goTo("/")} />;
   }
 
   return <Loteria />;

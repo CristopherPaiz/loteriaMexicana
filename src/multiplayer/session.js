@@ -10,7 +10,7 @@
    código dictado a viva voz llevan exactamente a la misma sala.
    ============================================================ */
 
-import { decodeGameCode, GAME_CODE_LENGTH, onlyDigits, PLAYER_CODE_LENGTH } from "./codes.js";
+import { createPlayerCode, decodeGameCode, GAME_CODE_LENGTH, onlyDigits, PLAYER_CODE_LENGTH } from "./codes.js";
 import { isMarkerKind } from "./markers.js";
 
 export const HOST_KEY = "loteria_mp_host";
@@ -19,14 +19,14 @@ export const PLAYER_KEY = "loteria_mp_player";
 export const ROUTES = {
   host: "host",
   player: "player",
-  help: "help",
+  join: "join",
 };
 
 /**
  * Lee la ruta actual del hash.
  * #/                      -> anfitrión
- * #/como-funciona         -> explicación
- * #/jugador               -> unirse escribiendo el código
+ * #/unirse                -> inicio con el modal de entrada abierto
+ * #/jugador               -> el cartón propio (necesita partida guardada)
  * #/jugador/<código>      -> unirse directo (QR)
  */
 export const parseRoute = (hash = window.location.hash) => {
@@ -36,7 +36,7 @@ export const parseRoute = (hash = window.location.hash) => {
     .filter(Boolean)
     .map(decodeURIComponent);
 
-  if (segments[0] === "como-funciona") return { name: ROUTES.help };
+  if (segments[0] === "unirse") return { name: ROUTES.join };
 
   if (segments[0] === "jugador") {
     return { name: ROUTES.player, gameCode: onlyDigits(segments[1] ?? "", GAME_CODE_LENGTH) };
@@ -107,3 +107,30 @@ export const savePlayerSession = (session) =>
   });
 
 export const clearPlayerSession = () => writeJson(PLAYER_KEY, null);
+
+/**
+ * Entrar a una sala y dejar la partida guardada.
+ *
+ * Volver a la misma sala conserva código de jugador, marcador y marcas; entrar
+ * en otra empieza de cero, porque el cartón ya no sería el mismo.
+ *
+ * @returns la partida creada, o null si el código no vale.
+ */
+export const joinRoom = (code) => {
+  const room = decodeGameCode(code);
+  if (!room) return null;
+
+  const saved = loadPlayerSession();
+  const sameRoom = saved?.gameCode === room.gameCode;
+
+  const next = {
+    ...room,
+    playerCode: sameRoom ? saved.playerCode : createPlayerCode(),
+    // Sala nueva, elección nueva: el modal del marcador sale solo.
+    marker: sameRoom ? saved.marker : null,
+    marks: sameRoom ? saved.marks : {},
+  };
+
+  savePlayerSession(next);
+  return next;
+};

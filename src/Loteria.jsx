@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import PropTypes from "prop-types";
 import TopPanel from "./components/TopPanel";
 import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
@@ -10,7 +11,8 @@ import GameModal from "./components/GameModal";
 import GameOverScreen from "./components/GameOverScreen";
 import CardImage from "./components/CardImage";
 import HostRoomModal from "./components/multiplayer/HostRoomModal";
-import { loadHostRoom, saveHostRoom, goTo } from "./multiplayer/session";
+import HowItWorks from "./components/multiplayer/HowItWorks";
+import { loadHostRoom, loadPlayerSession, saveHostRoom, goTo } from "./multiplayer/session";
 import { getMode } from "./multiplayer/modes";
 import { formatCode } from "./multiplayer/codes";
 import "./Loteria.css";
@@ -53,7 +55,7 @@ const BASE_SOUNDS = [
 // Assets mínimos para poder jugar: imágenes del estilo inicial + voz por defecto.
 const generateAssets = (type) => [...cardImageUrls(type), ...BASE_SOUNDS, ...voiceSoundUrls(DEFAULT_VOICE)];
 
-const Loteria = () => {
+const Loteria = ({ openJoin = false }) => {
   const [currentCard, setCurrentCard] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [deck, setDeck] = useState([]);
@@ -102,8 +104,16 @@ const Loteria = () => {
   // Sala multijugador: el anfitrión es este mismo dispositivo, así que vive
   // junto al resto del estado de la partida.
   const [room, setRoom] = useState(() => loadHostRoom());
-  const [showRoom, setShowRoom] = useState(false);
-  const [roomView, setRoomView] = useState("sala");
+  // openJoin llega desde la ruta #/unirse: el modal abre directo en el campo
+  // del código, sin pasar por la elección de papel.
+  const [showRoom, setShowRoom] = useState(openJoin);
+  const [roomView, setRoomView] = useState(openJoin ? "unirse" : "sala");
+  const [showHelp, setShowHelp] = useState(false);
+
+  // Un teléfono es anfitrión o es jugador, no las dos cosas. Tener sala manda:
+  // es la señal de que este aparato es el que canta. Si no la tiene pero sí un
+  // cartón, es un jugador y no debe ver nunca los ajustes de la sala.
+  const [isPlayerDevice] = useState(() => !loadHostRoom() && Boolean(loadPlayerSession()));
 
   // Audio Context Refs
   const audioContextRef = useRef(null);
@@ -564,7 +574,14 @@ const Loteria = () => {
   // El modo puede traer su propio ritmo (Express canta cada 3 s). Se aplica al
   // elegirlo, pero el anfitrión sigue mandando: el deslizador lo sobrescribe.
   const handleRoomChange = (next) => {
-    if (!next) return;
+    // null = cerrar la sala y volver al juego de siempre.
+    if (!next) {
+      setRoom(null);
+      saveHostRoom(null);
+      setShowRoom(false);
+      resetGame();
+      return;
+    }
 
     const isNewRoom = next.gameCode !== room?.gameCode;
     setRoom(next);
@@ -579,9 +596,16 @@ const Loteria = () => {
   };
 
   const openRoom = (view) => {
-    setRoomView(view);
-    setShowRoom(true);
     setShowMenu(false);
+
+    // A un jugador no le sirve nada de la sala: se le devuelve a su cartón.
+    if (isPlayerDevice) {
+      goTo("/jugador");
+      return;
+    }
+
+    setRoomView(room ? view : "elegir");
+    setShowRoom(true);
   };
 
   return (
@@ -669,6 +693,7 @@ const Loteria = () => {
               getCardImageUrl={getCardImageUrl}
               cardAnimation={cardAnimation}
               onOpenMultiplayer={() => openRoom("sala")}
+              isPlayerDevice={isPlayerDevice}
             />
 
             {/* Contador como componente independiente */}
@@ -700,8 +725,12 @@ const Loteria = () => {
           setIsModalOpen(true);
         }}
         onOpenMultiplayer={() => openRoom("sala")}
-        onOpenHelp={() => goTo("/como-funciona")}
+        onOpenHelp={() => {
+          setShowMenu(false);
+          setShowHelp(true);
+        }}
         roomCode={room?.gameCode ?? null}
+        isPlayerDevice={isPlayerDevice}
       />
       {!showMenu && <MenuButton onClick={() => setShowMenu(!showMenu)} />}
 
@@ -719,8 +748,10 @@ const Loteria = () => {
         onStartGame={() => setShowRoom(false)}
         drawnCards={pastCardsAll}
         typeCard={typeCard}
-        onOpenHelp={() => goTo("/como-funciona")}
+        onOpenHelp={() => setShowHelp(true)}
       />
+
+      <HowItWorks isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Modal de confirmación para detener juego */}
       <GameModal
@@ -779,6 +810,10 @@ const Loteria = () => {
       </GameModal>
     </div>
   );
+};
+
+Loteria.propTypes = {
+  openJoin: PropTypes.bool,
 };
 
 export default Loteria;

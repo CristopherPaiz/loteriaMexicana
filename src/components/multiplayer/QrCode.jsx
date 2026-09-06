@@ -24,10 +24,18 @@ const QrCode = ({ value, size = 208 }) => {
       // Alto contraste: el fondo de la app es oscuro y muchos lectores fallan
       // con un QR claro sobre claro.
       color: { dark: "#101219", light: "#ffffff" },
-    }).catch((error) => {
-      console.error("No se pudo dibujar el QR:", error);
-      setFailed(true);
-    });
+    })
+      .then(() => {
+        // La librería fija el tamaño en el style del canvas, y eso gana sobre
+        // la hoja de estilos. Se retira: el lienzo se queda a plena resolución
+        // (más nítido) y el CSS decide cuánto ocupa en pantalla.
+        canvas.style.removeProperty("width");
+        canvas.style.removeProperty("height");
+      })
+      .catch((error) => {
+        console.error("No se pudo dibujar el QR:", error);
+        setFailed(true);
+      });
   }, [value, size]);
 
   if (failed) {

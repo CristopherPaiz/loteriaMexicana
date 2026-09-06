@@ -155,7 +155,7 @@ button.mp-cell:active {
 }
 
 .mp-cell.is-marked .mp-cell__img {
-  filter: brightness(0.8) saturate(0.72);
+  filter: brightness(0.9) saturate(0.8);
 }
 
 /* Estados de verificación (solo lectura, en el panel del anfitrión) */
@@ -311,9 +311,30 @@ button.mp-cell:active {
 .mp-win__body {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12px;
+}
+
+.mp-win__body > .mp-win__code,
+.mp-win__body > .lot-note {
   text-align: center;
+}
+
+.mp-win__code {
+  align-self: center;
+}
+
+.mp-win__rule {
+  width: 100%;
+  height: 1px;
+  margin: 4px 0 0;
+  border: 0;
+  background: var(--lot-border);
+}
+
+.mp-win__markers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mp-win__code {
@@ -338,7 +359,7 @@ button.mp-cell:active {
 
 .mp-room__digits {
   display: block;
-  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  font-size: clamp(2rem, 10vw, 2.7rem);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.1em;
@@ -348,7 +369,7 @@ button.mp-cell:active {
 .mp-qr {
   display: flex;
   justify-content: center;
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--lot-radius);
   background: #ffffff;
   width: fit-content;
@@ -357,7 +378,7 @@ button.mp-cell:active {
 
 .mp-qr canvas {
   display: block;
-  width: min(184px, 48vw);
+  width: min(148px, 40vw);
   height: auto;
   image-rendering: pixelated; /* el QR se lee mejor sin suavizado */
 }
@@ -369,10 +390,11 @@ button.mp-cell:active {
 }
 
 /* Los dos caben en una fila incluso en pantallas estrechas. */
+/* Que crezcan a partir de su contenido, no repartidos a la fuerza: con
+   flex-basis 0 el texto de "Otro código" se salía de su caja. */
 .mp-room__actions .lot-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 10px 8px;
+  flex: 1 1 auto;
+  padding: 10px 16px;
   font-size: 0.85rem;
 }
 
@@ -742,69 +764,29 @@ button.mp-cell:active {
   color: var(--lot-text-muted);
 }
 
-/* ---------- Opciones del jugador ---------- */
+/* ---------- Elegir con qué se marca (modal sobre el cartón) ---------- */
 
-.mp-options .lot-modal__body,
-.mp-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mp-confirm {
-  padding: 14px;
-  border: 1px solid var(--lot-red);
-  border-radius: var(--lot-radius);
-  background: rgba(230, 57, 70, 0.12);
-}
-
-.mp-confirm p {
-  margin: 0 0 12px;
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-
-.mp-confirm__actions {
-  display: flex;
-  gap: 10px;
-}
-
-.mp-confirm__actions .lot-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 10px 8px;
-  font-size: 0.85rem;
-}
-
-/* ---------- Elegir con qué se marca ---------- */
-
-.mp-picker__intro {
-  max-width: 420px;
-  margin: 0 auto 16px;
-  text-align: center;
-  line-height: 1.55;
-  color: var(--lot-text-muted);
+.mp-picker-modal {
+  max-width: 380px;
 }
 
 .mp-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 420px;
-  margin: 0 auto 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .mp-picker__option {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 14px 6px 12px;
   border: 1px solid var(--lot-border-strong);
   border-radius: var(--lot-radius);
   background: var(--lot-surface-2);
   color: var(--lot-text);
-  text-align: left;
   cursor: pointer;
   transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s var(--lot-ease);
 }
@@ -815,53 +797,248 @@ button.mp-cell:active {
 }
 
 .mp-picker__option:active {
-  transform: scale(0.99);
+  transform: scale(0.97);
 }
 
 .mp-picker__option:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--lot-surface-0), 0 0 0 5px var(--lot-amber);
+  box-shadow: 0 0 0 3px var(--lot-surface-1), 0 0 0 5px var(--lot-amber);
 }
 
-/* Tres muestras solapadas, cada una con su giro: se ve de un golpe cómo
-   quedará el cartón. */
+/* Tres muestras solapadas y giradas: se ve de un golpe cómo va a quedar. */
 .mp-picker__samples {
-  flex: none;
   display: flex;
   align-items: center;
-  width: 92px;
-  height: 56px;
+  justify-content: center;
+  height: 46px;
 }
 
 .mp-picker__samples img {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6));
   transform: rotate(var(--mp-rot, 0deg)) scale(var(--mp-scale, 1));
 }
 
 .mp-picker__samples img + img {
-  margin-left: -18px;
+  margin-left: -15px;
 }
 
-.mp-picker__text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.mp-picker__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   Modales apilados y ordenados
+   ============================================================ */
+
+/* Ayuda y confirmaciones van encima del modal que las pidió. */
+.lot-modal-overlay--top {
+  z-index: 2100;
+}
+
+/* Ningún botón parte su texto en dos líneas: se recorta antes. */
+.lot-btn {
+  white-space: nowrap;
+}
+
+.lot-btn__label,
+.lot-btn > span {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mp-picker__text strong {
-  font-size: 1.05rem;
+/* ---------- Confirmación ---------- */
+
+.mp-ask {
+  width: min(400px, 100%);
 }
 
-.mp-picker__text span {
-  font-size: 0.82rem;
+.mp-ask__body {
+  padding: 22px 20px 6px;
+  text-align: center;
+}
+
+.mp-ask__title {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mp-ask__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
   color: var(--lot-text-muted);
 }
 
-.mp-picker__leave {
-  max-width: 420px;
-  margin: 18px auto 0;
+.mp-ask__actions {
+  display: flex;
+  gap: 10px;
+  padding: 18px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+}
+
+.mp-ask__actions .lot-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px 10px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Ayuda ---------- */
+
+.mp-help {
+  width: min(560px, 100%);
+}
+
+.mp-help .mp-doc {
+  margin-bottom: 22px;
+}
+
+.mp-help .mp-doc:last-child {
+  margin-bottom: 0;
+}
+
+.mp-help .mp-doc__title {
+  font-size: 1rem;
+}
+
+/* ---------- Sala del anfitrión ---------- */
+
+.mp-room {
+  width: min(440px, 100%);
+}
+
+/* Un único ritmo vertical para todo el panel: antes cada sección traía su
+   propio margen y el conjunto se veía descuadrado. */
+.mp-room__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mp-room__code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.mp-room__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-room__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--lot-text-muted);
+}
+
+.mp-room__hint--warn {
+  color: var(--lot-text-faint);
+}
+
+.mp-room__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--lot-border);
+}
+
+.mp-room__foot .lot-btn--danger {
+  min-height: 44px;
+  font-size: 0.88rem;
+}
+
+/* El formulario de entrada, ya dentro del modal: campo, botón y ayuda. */
+.mp-join {
+  gap: 12px;
+  max-width: none;
+}
+
+/* ---------- Ajustes plegados ---------- */
+
+.mp-more {
+  border: 1px solid var(--lot-border);
+  border-radius: var(--lot-radius);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.mp-more__summary {
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--lot-text-muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.mp-more__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Flecha propia: la nativa cambia de forma en cada navegador. */
+.mp-more__summary::after {
+  content: "";
+  float: right;
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s var(--lot-ease);
+}
+
+.mp-more[open] .mp-more__summary::after {
+  transform: rotate(-135deg);
+  margin-top: 7px;
+}
+
+.mp-more__summary:hover {
+  color: var(--lot-text);
+}
+
+.mp-more__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--lot-amber);
+  border-radius: var(--lot-radius);
+}
+
+.mp-more__body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 16px 16px;
+}
+
+/* Cerrar y comenzar comparten fila: salir a la izquierda, seguir a la derecha. */
+.mp-room__foot-row {
+  display: flex;
+  gap: 10px;
+}
+
+.mp-room__foot-row .lot-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px 10px;
+}
+
+.mp-room__foot-row .lot-btn--danger {
+  flex: 0 1 auto;
+  min-height: 56px;
+  font-size: 0.9rem;
 }

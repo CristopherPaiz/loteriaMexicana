@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef } from "react";
 import VoiceButton from "./VoiceButton";
+import useBackToClose from "../multiplayer/useBackToClose";
 import { FaTimes, FaPrint, FaUsers, FaQuestionCircle } from "react-icons/fa";
 
 const TIME_MIN = 3;
@@ -25,6 +26,7 @@ const RightPanel = ({
   onOpenMultiplayer,
   onOpenHelp,
   roomCode = null,
+  isPlayerDevice = false,
   cardAnimations,
   cardAnimation,
   setCardAnimation,
@@ -58,6 +60,8 @@ const RightPanel = ({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [setShowMenu, showMenu]);
+
+  useBackToClose(showMenu, () => setShowMenu(false));
 
   return (
     <>
@@ -206,7 +210,7 @@ const RightPanel = ({
 
         <footer className="lot-panel__footer">
           <button type="button" className="lot-btn lot-btn--next lot-btn--block" onClick={onOpenMultiplayer}>
-            <FaUsers /> {roomCode ? "Sala multijugador" : "Jugar en varios teléfonos"}
+            <FaUsers /> {isPlayerDevice ? "Volver a mi cartón" : roomCode ? "Sala multijugador" : "Jugar en varios teléfonos"}
           </button>
 
           <button type="button" className="lot-btn lot-btn--ghost lot-btn--block" onClick={onOpenHelp}>
@@ -236,6 +240,7 @@ RightPanel.propTypes = {
   onOpenMultiplayer: PropTypes.func.isRequired,
   onOpenHelp: PropTypes.func.isRequired,
   roomCode: PropTypes.string,
+  isPlayerDevice: PropTypes.bool,
   cardAnimations: PropTypes.arrayOf(
     PropTypes.shape({
       value: PropTypes.string.isRequired,

@@ -24,7 +24,7 @@ const VARIANTS = 5;
 export const MARKER_KINDS = [
   { id: "frijol", label: "Frijol", hint: "El de toda la vida", size: 1 },
   { id: "maiz", label: "Maíz", hint: "Grano amarillo, bien visible", size: 1 },
-  { id: "corcholata", label: "Corcholata", hint: "Tapitas de refresco", size: 1.1 },
+  { id: "corcholata", label: "Tapitas", hint: "Corcholatas de refresco", size: 1.1 },
 ];
 
 export const DEFAULT_MARKER_KIND = MARKER_KINDS[0].id;
