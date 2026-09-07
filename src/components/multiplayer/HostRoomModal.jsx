@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { FaTimes, FaSyncAlt, FaCopy, FaCheck, FaQuestionCircle, FaUsers, FaClipboardCheck, FaCrown, FaMobileAlt, FaPlay, FaArrowLeft, FaTable } from "react-icons/fa";
-import QrCode from "./QrCode";
 import JoinForm from "./JoinForm";
 import VerifyPanel from "./VerifyPanel";
 import ConfirmModal from "./ConfirmModal";
@@ -9,6 +8,9 @@ import useModalDismiss from "../../multiplayer/useModalDismiss";
 import { createGameCode, decodeGameCode, formatCode, MAX_BOARDS } from "../../multiplayer/codes";
 import { GAME_MODES, getMode } from "../../multiplayer/modes";
 import { buildJoinUrl } from "../../multiplayer/session";
+
+// La librería del QR solo hace falta cuando el anfitrión mira su sala.
+const QrCode = lazy(() => import("./QrCode"));
 
 const BOARD_OPTIONS = Array.from({ length: MAX_BOARDS }, (_, i) => i + 1);
 
@@ -152,7 +154,9 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, on
                 <section className="mp-room__code">
                   <span className="mp-field__label">Código de partida</span>
                   <strong className="mp-room__digits">{formatCode(room.gameCode)}</strong>
-                  <QrCode value={joinUrl} />
+                  <Suspense fallback={<div className="mp-qr" />}>
+                    <QrCode value={joinUrl} />
+                  </Suspense>
                   <div className="mp-room__actions">
                     <button type="button" className="lot-btn lot-btn--ghost" onClick={copyLink}>
                       {copied ? <FaCheck /> : <FaCopy />} {copied ? "Copiado" : "Copiar"}

@@ -1,9 +1,11 @@
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import { FaQuestionCircle, FaQrcode } from "react-icons/fa";
 import { decodeGameCode, GAME_CODE_LENGTH, onlyDigits } from "../../multiplayer/codes";
 import { joinRoom } from "../../multiplayer/session";
-import QrScanner from "./QrScanner";
+// El lector de QR arrastra jsQR y el acceso a la cámara. Casi nadie lo abre,
+// así que se descarga solo cuando se pulsa el botón de escanear.
+const QrScanner = lazy(() => import("./QrScanner"));
 
 /**
  * Entrar a una partida: un campo y un botón.
@@ -88,7 +90,11 @@ const JoinForm = ({ onJoined, onOpenHelp }) => {
         <FaQuestionCircle /> Cómo funciona
       </button>
 
-      <QrScanner isOpen={scanning} onDetected={handleScan} onClose={() => setScanning(false)} />
+      {scanning && (
+        <Suspense fallback={null}>
+          <QrScanner isOpen onDetected={handleScan} onClose={() => setScanning(false)} />
+        </Suspense>
+      )}
     </form>
   );
 };

@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 import TopPanel from "./components/TopPanel";
 import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
 import MenuButton from "./components/MenuButton";
-import LoteriaCardGenerator from "./components/LoteriaCardGenerator";
 import CountdownTimer from "./components/CountdownTimer";
 import LoadingScreen from "./components/LoadingScreen";
 import GameModal from "./components/GameModal";
@@ -16,6 +15,10 @@ import { loadHostRoom, loadPlayerSession, saveHostRoom, goTo } from "./multiplay
 import { getMode } from "./multiplayer/modes";
 import { formatCode } from "./multiplayer/codes";
 import "./Loteria.css";
+
+// El generador de cartones para imprimir carga jsPDF (y html2canvas detrás).
+// Es un extra que casi nadie abre, así que se descarga al abrir el modal.
+const LoteriaCardGenerator = lazy(() => import("./components/LoteriaCardGenerator"));
 
 const TIME_BETWEEN_CARDS = 5;
 const INITIAL_CARD_STYLE = "HD"; // HD o SD
@@ -721,7 +724,11 @@ const Loteria = ({ openJoin = false }) => {
 
       <audio ref={audioRef} />
 
-      <LoteriaCardGenerator isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {isModalOpen && (
+        <Suspense fallback={null}>
+          <LoteriaCardGenerator isOpen onClose={() => setIsModalOpen(false)} />
+        </Suspense>
+      )}
 
       <HostRoomModal
         isOpen={showRoom}
