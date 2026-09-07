@@ -112,7 +112,9 @@ const VerifyPanel = ({ room, drawnCards, typeCard, mode }) => {
             </div>
           ))}
 
-          <p className="lot-note">Verde: cartas que sí salieron. Rojo: lo que le falta al patrón más cercano.</p>
+          <p className="lot-note">
+            Verde: cartas que sí salieron. Rojo: las que le faltan para {mode.label}.{winner ? " El aro grueso marca el patrón con el que ganó." : ""}
+          </p>
         </div>
       )}
     </div>

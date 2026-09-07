@@ -251,14 +251,26 @@ button.mp-cell:active {
   --mp-libre-color: var(--mp-verificar-libre-color);
 }
 
-/* Estados de verificación (solo lectura, en el panel del anfitrión) */
+/* Estados de verificación (solo lectura, en el panel del anfitrión).
+
+   Aquí el marco es el mensaje: verde = esa carta sí salió, rojo = le falta.
+   Antes el verde solo aparecía en el cartón ganador, así que en uno que no
+   ganaba el anfitrión veía puro rojo y la leyenda mentía. */
+.mp-board--verificar .mp-cell.is-marked {
+  border-color: rgba(42, 157, 143, 0.75);
+  background: rgba(42, 157, 143, 0.1);
+}
+
+/* El patrón con el que ganó se lleva un aro más grueso para distinguirse
+   del resto de cartas que también salieron. */
 .mp-cell.is-winning {
   border-color: var(--lot-green);
-  box-shadow: 0 0 0 1px var(--lot-green);
+  box-shadow: 0 0 0 2px var(--lot-green);
 }
 
 .mp-cell.is-missing {
   border-color: var(--lot-red);
+  background: rgba(230, 57, 70, 0.12);
 }
 
 .mp-board .mp-cell.is-missing .mp-cell__img {
