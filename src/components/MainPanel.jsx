@@ -16,7 +16,6 @@ const MainPanel = ({
   getCardImageUrl,
   cardAnimation,
   onOpenMultiplayer,
-  isPlayerDevice = false,
 }) => (
   <div className="main-panel">
     {/* Hueco elástico: la carta se queda con el espacio sobrante */}
@@ -63,7 +62,7 @@ const MainPanel = ({
               si se juega solo o con más gente. */}
           <button type="button" className="lot-btn lot-btn--multi" onClick={onOpenMultiplayer}>
             <FaUsers />
-            <span className="lot-btn__label">{isPlayerDevice ? "Mi cartón" : "Multijugador"}</span>
+            <span className="lot-btn__label">Multijugador</span>
           </button>
         </>
       )}
@@ -87,5 +86,4 @@ MainPanel.propTypes = {
   getCardImageUrl: PropTypes.func.isRequired,
   cardAnimation: PropTypes.string.isRequired,
   onOpenMultiplayer: PropTypes.func.isRequired,
-  isPlayerDevice: PropTypes.bool,
 };

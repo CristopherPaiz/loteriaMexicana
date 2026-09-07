@@ -14,9 +14,11 @@ const directImage = () => "";
  * - `highlight`: casillas del patrón ganador, para resaltarlo al verificar.
  * - `missing`: casillas que le faltaban al patrón más cercano.
  */
-const BoardGrid = ({ board, marked, onToggle = null, typeCard = "HD", highlight = null, missing = null, size = "normal", marker = "frijol" }) => (
+const BoardGrid = ({ board, marked, onToggle = null, typeCard = "HD", highlight = null, missing = null, size = "normal", marker = "frijol", context = "juego" }) => (
   <div
-    className={`mp-board mp-board--${size}`}
+    /* La clase del tipo (o de la verificación) elige qué par de variables
+       de brillo se aplica: ver la cabecera de mp.css. */
+    className={`mp-board mp-board--${size} mp-board--${context === "verificar" ? "verificar" : marker}`}
     style={{ "--mp-board-cols": BOARD_COLUMNS }}
     role={onToggle ? "group" : "img"}
     aria-label={onToggle ? "Cartón: toca una carta para poner tu marcador" : "Cartón"}
@@ -89,6 +91,7 @@ BoardGrid.propTypes = {
   missing: PropTypes.instanceOf(Set),
   size: PropTypes.oneOf(["normal", "compact"]),
   marker: PropTypes.string,
+  context: PropTypes.oneOf(["juego", "verificar"]),
 };
 
 export default BoardGrid;

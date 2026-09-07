@@ -6,6 +6,44 @@
    .lot-section, .lot-modal...). Aquí solo vive lo propio del multijugador.
    ============================================================ */
 
+/* ============================================================
+   BRILLO DE LAS CARTAS  —  para ajustar a ojo
+   ============================================================
+   Brillo:  0 = negro,          1 = la carta tal cual.
+   Color:   0 = blanco y negro,  1 = a todo color.
+
+   Se aplican a la imagen de la carta, no al marcador: el frijol o la
+   corcholata se quedan a plena luz y a todo color siempre.
+
+   Hay un par por cada tipo porque un frijol negro tapa mucho más
+   que una corcholata brillante, y la carta de debajo no necesita
+   apagarse lo mismo en los dos casos.
+   ============================================================ */
+
+:root {
+  /* Cartón del jugador */
+  --mp-frijol-marcada: 1;
+  --mp-frijol-marcada-color: 1;
+  --mp-frijol-libre: 0.6;
+  --mp-frijol-libre-color: 0.3;
+
+  --mp-maiz-marcada: 1;
+  --mp-maiz-marcada-color: 1;
+  --mp-maiz-libre: 0.6;
+  --mp-maiz-libre-color: 0.3;
+
+  --mp-corcholata-marcada: 1;
+  --mp-corcholata-marcada-color: 1;
+  --mp-corcholata-libre: 0.6;
+  --mp-corcholata-libre-color: 0.3;
+
+  /* Verificación del anfitrión (los cartones pequeños) */
+  --mp-verificar-marcada: 1;
+  --mp-verificar-marcada-color: 1;
+  --mp-verificar-libre: 0.6;
+  --mp-verificar-libre-color: 0.3;
+}
+
 /* ---------- Pantalla completa (jugador / explicación) ---------- */
 
 .mp-screen {
@@ -59,9 +97,24 @@
 
 .mp-screen__foot {
   flex: none;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
   padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--lot-border);
   background: var(--lot-surface-1);
+}
+
+.mp-foot__leave {
+  flex: 0 0 auto;
+  width: 56px;
+  padding: 0;
+  gap: 0;
+}
+
+.mp-foot__win {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* ---------- Cartón 4x4 ---------- */
@@ -97,7 +150,9 @@
   overflow: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.2s var(--lot-ease), transform 0.15s var(--lot-ease);
+  transition:
+    border-color 0.2s var(--lot-ease),
+    transform 0.15s var(--lot-ease);
 }
 
 button.mp-cell:active {
@@ -109,7 +164,9 @@ button.mp-cell:active {
   height: 100%;
   object-fit: contain;
   display: block;
-  transition: filter 0.22s var(--lot-ease), opacity 0.22s var(--lot-ease);
+  transition:
+    filter 0.22s var(--lot-ease),
+    opacity 0.22s var(--lot-ease);
 }
 
 .mp-cell .lot-card-fallback {
@@ -154,8 +211,44 @@ button.mp-cell:active {
   background: #1c2029;
 }
 
+/* Brillo y color salen de las variables de arriba. */
 .mp-cell.is-marked .mp-cell__img {
-  filter: brightness(0.9) saturate(0.8);
+  filter: brightness(var(--mp-marcada, 0.9)) saturate(var(--mp-marcada-color, 0.8));
+}
+
+.mp-cell:not(.is-marked) .mp-cell__img {
+  filter: brightness(var(--mp-libre, 1)) saturate(var(--mp-libre-color, 1));
+}
+
+/* Cada tipo de marcador enciende su propio par. */
+.mp-board--frijol {
+  --mp-marcada: var(--mp-frijol-marcada);
+  --mp-marcada-color: var(--mp-frijol-marcada-color);
+  --mp-libre: var(--mp-frijol-libre);
+  --mp-libre-color: var(--mp-frijol-libre-color);
+}
+
+.mp-board--maiz {
+  --mp-marcada: var(--mp-maiz-marcada);
+  --mp-marcada-color: var(--mp-maiz-marcada-color);
+  --mp-libre: var(--mp-maiz-libre);
+  --mp-libre-color: var(--mp-maiz-libre-color);
+}
+
+.mp-board--corcholata {
+  --mp-marcada: var(--mp-corcholata-marcada);
+  --mp-marcada-color: var(--mp-corcholata-marcada-color);
+  --mp-libre: var(--mp-corcholata-libre);
+  --mp-libre-color: var(--mp-corcholata-libre-color);
+}
+
+/* La verificación del anfitrión manda sobre el tipo: ahí las marcas no son
+   frijoles de nadie, son "esta carta ya salió". */
+.mp-board--verificar {
+  --mp-marcada: var(--mp-verificar-marcada);
+  --mp-marcada-color: var(--mp-verificar-marcada-color);
+  --mp-libre: var(--mp-verificar-libre);
+  --mp-libre-color: var(--mp-verificar-libre-color);
 }
 
 /* Estados de verificación (solo lectura, en el panel del anfitrión) */
@@ -168,7 +261,7 @@ button.mp-cell:active {
   border-color: var(--lot-red);
 }
 
-.mp-cell.is-missing .mp-cell__img {
+.mp-board .mp-cell.is-missing .mp-cell__img {
   filter: grayscale(1) brightness(0.5);
 }
 
@@ -248,12 +341,6 @@ button.mp-cell:active {
   line-height: 1.15;
 }
 
-.mp-identity--muted {
-  margin-left: auto;
-  text-align: right;
-  opacity: 0.65;
-}
-
 .mp-identity__label {
   font-size: 0.66rem;
   text-transform: uppercase;
@@ -268,13 +355,45 @@ button.mp-cell:active {
   letter-spacing: 0.06em;
 }
 
-.mp-identity--muted .mp-identity__code {
-  font-size: 1rem;
+.mp-head-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }
 
-.mp-leave {
+.mp-icon-btn {
   flex: none;
-  padding: 8px 10px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--lot-border);
+  border-radius: 50%;
+  background: var(--lot-surface-2);
+  color: var(--lot-text-muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.mp-icon-btn:hover {
+  background: var(--lot-surface-3);
+  color: var(--lot-text);
+}
+
+.mp-icon-btn:focus-visible {
+  outline: 2px solid var(--lot-amber);
+  outline-offset: 2px;
+}
+
+/* El marcador actual hace de icono: se reconoce sin leer nada. */
+.mp-icon-btn--marker img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
 }
 
 .mp-mode-banner {
@@ -308,42 +427,98 @@ button.mp-cell:active {
 
 /* ---------- Modal de "¡Lotería!" ---------- */
 
+.mp-win {
+  width: min(400px, 100%);
+  position: relative;
+}
+
+.mp-win__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--lot-text-muted);
+  cursor: pointer;
+}
+
+.mp-win__close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--lot-text);
+}
+
 .mp-win__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  padding-top: 26px;
 }
 
-.mp-win__body > .mp-win__code,
-.mp-win__body > .lot-note {
-  text-align: center;
+.mp-win__badge {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--lot-green) 0%, var(--lot-green-deep) 100%);
+  color: #fff;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 24px rgba(42, 157, 143, 0.35);
+  animation: lot-pop 520ms var(--lot-ease) both;
+}
+
+.mp-win__label {
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lot-text-muted);
 }
 
 .mp-win__code {
   align-self: center;
-}
-
-.mp-win__rule {
-  width: 100%;
-  height: 1px;
-  margin: 4px 0 0;
-  border: 0;
-  background: var(--lot-border);
-}
-
-.mp-win__markers {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mp-win__code {
-  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-size: clamp(2.8rem, 15vw, 4rem);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
+  line-height: 1.05;
   color: var(--lot-text);
-  animation: lot-pop 460ms var(--lot-ease) both;
+}
+
+.mp-win__hint {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--lot-text-muted);
+}
+
+/* Separador con nombre: marca dónde acaba lo que hay que cantar y empieza
+   lo que hay que decidir. */
+.mp-win__next {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lot-text-faint);
+}
+
+.mp-win__next::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--lot-border);
 }
 
 /* ---------- Sala del anfitrión ---------- */
@@ -710,7 +885,10 @@ button.mp-cell:active {
   color: var(--lot-text);
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s var(--lot-ease);
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s var(--lot-ease);
 }
 
 .mp-role:hover {
@@ -724,7 +902,9 @@ button.mp-cell:active {
 
 .mp-role:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--lot-surface-0), 0 0 0 5px var(--lot-amber);
+  box-shadow:
+    0 0 0 3px var(--lot-surface-0),
+    0 0 0 5px var(--lot-amber);
 }
 
 .mp-role > svg {
@@ -788,7 +968,10 @@ button.mp-cell:active {
   background: var(--lot-surface-2);
   color: var(--lot-text);
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s var(--lot-ease);
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s var(--lot-ease);
 }
 
 .mp-picker__option:hover {
@@ -802,7 +985,9 @@ button.mp-cell:active {
 
 .mp-picker__option:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--lot-surface-1), 0 0 0 5px var(--lot-amber);
+  box-shadow:
+    0 0 0 3px var(--lot-surface-1),
+    0 0 0 5px var(--lot-amber);
 }
 
 /* Tres muestras solapadas y giradas: se ve de un golpe cómo va a quedar. */
@@ -829,7 +1014,6 @@ button.mp-cell:active {
   font-size: 0.85rem;
   font-weight: 700;
 }
-
 
 /* ============================================================
    Modales apilados y ordenados
@@ -1101,7 +1285,9 @@ button.mp-cell:active {
   color: var(--lot-text);
   font-size: 1.5rem;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .mp-join__scan:hover {
@@ -1116,4 +1302,25 @@ button.mp-cell:active {
 .mp-join__scan:focus-visible {
   outline: 2px solid var(--lot-amber);
   outline-offset: 2px;
+}
+
+.mp-picker__option.is-active {
+  border-color: var(--lot-green);
+  background: rgba(42, 157, 143, 0.16);
+}
+
+/* Vuelta al cartón propio: se ofrece primero, pero sigue siendo una opción
+   más. Encerrar el teléfono en un papel dejaba sin salida a quien luego
+   quisiera montar la sala. */
+.mp-role--back {
+  border-color: rgba(42, 157, 143, 0.45);
+  background: rgba(42, 157, 143, 0.12);
+}
+
+.mp-role--back:hover {
+  background: rgba(42, 157, 143, 0.2);
+}
+
+.mp-role--back > svg {
+  color: var(--lot-green);
 }

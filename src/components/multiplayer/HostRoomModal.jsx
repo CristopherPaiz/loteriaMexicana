@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { FaTimes, FaSyncAlt, FaCopy, FaCheck, FaQuestionCircle, FaUsers, FaClipboardCheck, FaCrown, FaMobileAlt, FaPlay, FaArrowLeft } from "react-icons/fa";
+import { FaTimes, FaSyncAlt, FaCopy, FaCheck, FaQuestionCircle, FaUsers, FaClipboardCheck, FaCrown, FaMobileAlt, FaPlay, FaArrowLeft, FaTable } from "react-icons/fa";
 import QrCode from "./QrCode";
 import JoinForm from "./JoinForm";
 import VerifyPanel from "./VerifyPanel";
@@ -23,7 +23,7 @@ const BOARD_OPTIONS = Array.from({ length: MAX_BOARDS }, (_, i) => i + 1);
  * El anfitrión decide todo y el código lo lleva dentro, así que tocar cualquier
  * ajuste genera un código nuevo: otra configuración es otra sala.
  */
-const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, onStartGame, drawnCards, typeCard, onOpenHelp, initialView = "sala" }) => {
+const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, onStartGame, drawnCards, typeCard, onOpenHelp, hasPlayerBoard = false, initialView = "sala" }) => {
   const [view, setView] = useState(initialView);
   const [copied, setCopied] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -114,6 +114,16 @@ const HostRoomModal = ({ isOpen, onClose, room, onRoomChange, onJoinAsPlayer, on
             {!room && !isJoining && (
               <div className="mp-empty">
                 <p className="mp-empty__intro">Cada quien juega con su cartón en su teléfono. Alguien canta y los demás van tapando.</p>
+
+                {hasPlayerBoard && (
+                  <button type="button" className="mp-role mp-role--back" onClick={onJoinAsPlayer}>
+                    <FaTable />
+                    <span className="mp-role__text">
+                      <strong>Volver a mi cartón</strong>
+                      <span>Ya tienes uno en esta partida.</span>
+                    </span>
+                  </button>
+                )}
 
                 <button type="button" className="mp-role mp-role--host" onClick={() => reconfigure({})}>
                   <FaCrown />
@@ -247,6 +257,7 @@ HostRoomModal.propTypes = {
   drawnCards: PropTypes.arrayOf(PropTypes.number).isRequired,
   typeCard: PropTypes.string.isRequired,
   onOpenHelp: PropTypes.func.isRequired,
+  hasPlayerBoard: PropTypes.bool,
   initialView: PropTypes.oneOf(["sala", "verificar", "elegir", "unirse"]),
 };
 

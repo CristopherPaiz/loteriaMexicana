@@ -110,10 +110,10 @@ const Loteria = ({ openJoin = false }) => {
   const [roomView, setRoomView] = useState(openJoin ? "unirse" : "sala");
   const [showHelp, setShowHelp] = useState(false);
 
-  // Un teléfono es anfitrión o es jugador, no las dos cosas. Tener sala manda:
-  // es la señal de que este aparato es el que canta. Si no la tiene pero sí un
-  // cartón, es un jugador y no debe ver nunca los ajustes de la sala.
-  const [isPlayerDevice] = useState(() => !loadHostRoom() && Boolean(loadPlayerSession()));
+  // ¿Este teléfono ya tiene cartón de jugador? Se ofrece volver a él desde el
+  // modal, pero sin secuestrar el botón: encerrar el aparato en un papel dejaba
+  // sin salida a quien quisiera montar la sala.
+  const [hasPlayerBoard] = useState(() => Boolean(loadPlayerSession()));
 
   // Audio Context Refs
   const audioContextRef = useRef(null);
@@ -597,13 +597,6 @@ const Loteria = ({ openJoin = false }) => {
 
   const openRoom = (view) => {
     setShowMenu(false);
-
-    // A un jugador no le sirve nada de la sala: se le devuelve a su cartón.
-    if (isPlayerDevice) {
-      goTo("/jugador");
-      return;
-    }
-
     setRoomView(room ? view : "elegir");
     setShowRoom(true);
   };
@@ -693,7 +686,6 @@ const Loteria = ({ openJoin = false }) => {
               getCardImageUrl={getCardImageUrl}
               cardAnimation={cardAnimation}
               onOpenMultiplayer={() => openRoom("sala")}
-              isPlayerDevice={isPlayerDevice}
             />
 
             {/* Contador como componente independiente */}
@@ -738,6 +730,7 @@ const Loteria = ({ openJoin = false }) => {
         room={room}
         onRoomChange={handleRoomChange}
         onJoinAsPlayer={() => goTo("/jugador")}
+        hasPlayerBoard={hasPlayerBoard}
         onStartGame={() => setShowRoom(false)}
         drawnCards={pastCardsAll}
         typeCard={typeCard}

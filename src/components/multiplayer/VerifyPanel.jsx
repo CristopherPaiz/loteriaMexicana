@@ -105,6 +105,7 @@ const VerifyPanel = ({ room, drawnCards, typeCard, mode }) => {
                 marked={result.marked}
                 typeCard={typeCard}
                 size="compact"
+                context="verificar"
                 highlight={result.outcome.won ? new Set(maskToIndexes(result.outcome.mask)) : null}
                 missing={result.outcome.won ? null : new Set(result.outcome.missingIndexes)}
               />

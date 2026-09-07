@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { FaQuestionCircle, FaSignOutAlt, FaTrophy, FaTimes, FaEraser, FaDice } from "react-icons/fa";
+import { FaQuestionCircle, FaTrophy, FaTimes, FaRedo, FaDice, FaSignOutAlt } from "react-icons/fa";
 import BoardGrid from "./BoardGrid";
 import ConfirmModal from "./ConfirmModal";
 import HowItWorks from "./HowItWorks";
@@ -8,7 +8,7 @@ import useModalDismiss from "../../multiplayer/useModalDismiss";
 import { buildPlayerBoards } from "../../multiplayer/boards";
 import { createPlayerCode, decodeGameCode, formatCode } from "../../multiplayer/codes";
 import { getMode } from "../../multiplayer/modes";
-import { MARKER_KINDS, markerPreview } from "../../multiplayer/markers";
+import { MARKER_KINDS, markerFor, markerPreview } from "../../multiplayer/markers";
 import { clearPlayerSession, joinRoom, loadPlayerSession, savePlayerSession } from "../../multiplayer/session";
 
 /** Las marcas se guardan como array (JSON no serializa Sets). */
@@ -34,7 +34,9 @@ const PlayerScreen = ({ route, onExit }) => {
   const [activeBoard, setActiveBoard] = useState(0);
   const [showWin, setShowWin] = useState(false);
   const [confirmNewBoards, setConfirmNewBoards] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [changingMarker, setChangingMarker] = useState(false);
 
   const commit = useCallback((next) => {
     savePlayerSession(next);
@@ -76,10 +78,7 @@ const PlayerScreen = ({ route, onExit }) => {
     });
   };
 
-  const closeWin = () => {
-    setShowWin(false);
-    setConfirmNewBoards(false);
-  };
+  const closeWin = () => setShowWin(false);
 
   /** Quita las marcas y deja el mismo cartón: el anfitrión rebarajó el mazo. */
   const clearMarks = () => {
@@ -88,22 +87,29 @@ const PlayerScreen = ({ route, onExit }) => {
     closeWin();
   };
 
-  /** Estrena código de jugador, y con él cartones nuevos. */
+  /** Otro código de jugador es, en la práctica, otros cartones. */
   const requestNewBoards = () => {
     commit({ ...session, playerCode: createPlayerCode(), marks: {} });
     setActiveBoard(0);
+    setConfirmNewBoards(false);
     closeWin();
   };
 
-  const changeMarker = (marker) => commit({ ...session, marker, marks: setsToMarks(marks) });
+  const changeMarker = (marker) => {
+    commit({ ...session, marker, marks: setsToMarks(marks) });
+    setChangingMarker(false);
+  };
 
   const leave = () => {
     clearPlayerSession();
     setSession(null);
     setMarks({});
+    setConfirmLeave(false);
     closeWin();
     onExit();
   };
+
+  useModalDismiss(showWin, closeWin);
 
   // Sin partida guardada no hay nada que enseñar: se vuelve al inicio, donde
   // el modal de entrada pide el código.
@@ -111,11 +117,12 @@ const PlayerScreen = ({ route, onExit }) => {
     if (!session && !route.gameCode) onExit();
   }, [session, route.gameCode, onExit]);
 
-  useModalDismiss(showWin, closeWin);
-
   if (!session) return null;
 
-  // ------------------------------------------------------------
+  // Sin marcador elegido hay que decidir; abierto a mano se puede cerrar.
+  const pickingMarker = !session.marker || changingMarker;
+  const currentMarker = session.marker ? markerFor(session.marker, "cabecera") : null;
+
   return (
     <div className="mp-screen">
       <header className="mp-screen__head mp-screen__head--player">
@@ -123,14 +130,23 @@ const PlayerScreen = ({ route, onExit }) => {
           <span className="mp-identity__label">Tu código</span>
           <strong className="mp-identity__code">{formatCode(session.playerCode)}</strong>
         </div>
-        <div className="mp-identity mp-identity--muted">
-          <span className="mp-identity__label">Partida</span>
-          <strong className="mp-identity__code">{formatCode(session.gameCode)}</strong>
+
+        <div className="mp-head-actions">
+          {/* Enseña con qué se está marcando y sirve para cambiarlo: el propio
+              frijol es el botón, no hace falta explicarlo. */}
+          {currentMarker && (
+            <button type="button" className="mp-icon-btn mp-icon-btn--marker" onClick={() => setChangingMarker(true)} aria-label="Cambiar con qué marcas">
+              <img src={currentMarker.src} alt="" aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" className="mp-icon-btn" onClick={() => setShowHelp(true)} aria-label="Cómo funciona">
+            <FaQuestionCircle />
+          </button>
         </div>
       </header>
 
       <p className="mp-mode-banner">
-        <strong>{mode.label}</strong> · {mode.short}
+        Partida <strong>{formatCode(session.gameCode)}</strong> · {mode.label} · {mode.short}
       </p>
 
       {boards.length > 1 && (
@@ -155,74 +171,51 @@ const PlayerScreen = ({ route, onExit }) => {
       </div>
 
       <footer className="mp-screen__foot">
-        <button type="button" className="lot-btn lot-btn--start lot-btn--block" onClick={() => setShowWin(true)}>
+        {/* Solo el icono: al lado de "¡Lotería!" se entiende, y así no le
+            quita ancho al botón que de verdad se usa. */}
+        <button type="button" className="lot-btn lot-btn--danger mp-foot__leave" onClick={() => setConfirmLeave(true)} aria-label="Salir de la partida">
+          <FaSignOutAlt />
+        </button>
+
+        <button type="button" className="lot-btn lot-btn--start mp-foot__win" onClick={() => setShowWin(true)}>
           <FaTrophy /> ¡Lotería!
         </button>
       </footer>
 
-      {/* Todo lo de "fin de ronda" vive aquí: el código que hay que cantar y,
-          justo debajo, lo que se hace después. Es el único momento en que el
-          jugador levanta la vista del cartón, así que no hace falta otro menú. */}
+      {/* Momento de cantar: primero el número que hay que decir en voz alta y,
+          debajo, lo único que se hace cuando termina la ronda. */}
       {showWin && (
         <div className="lot-modal-overlay" onClick={closeWin} role="presentation">
-          <div className="lot-modal mp-win" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Tu código para verificar">
-            <header className="lot-modal__header">
-              <div className="lot-modal__heading">
-                <h2 className="lot-modal__title">Dile esto al anfitrión</h2>
-              </div>
-              <button type="button" className="lot-panel__close" onClick={closeWin} aria-label="Cerrar">
-                <FaTimes />
-              </button>
-            </header>
+          <div className="lot-modal mp-win" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Cantaste lotería">
+            <button type="button" className="mp-win__close" onClick={closeWin} aria-label="Cerrar">
+              <FaTimes />
+            </button>
 
             <div className="lot-modal__body mp-win__body">
-              <span className="mp-win__code">{formatCode(session.playerCode)}</span>
-              <p className="lot-note">
-                Con estos 5 dígitos el anfitrión reconstruye {session.boardsPerPlayer > 1 ? `tus ${session.boardsPerPlayer} cartones` : "tu cartón"} y comprueba
-                si cantaste bien.
-              </p>
+              <span className="mp-win__badge" aria-hidden="true">
+                <FaTrophy />
+              </span>
 
-              <hr className="mp-win__rule" />
+              <span className="mp-win__label">Tu código</span>
+              <span className="mp-win__code">{formatCode(session.playerCode)}</span>
+              <p className="mp-win__hint">Dile estos números al anfitrión para que revise tu cartón.</p>
+
+              <span className="mp-win__next">¿Y después?</span>
 
               <button type="button" className="mp-role" onClick={clearMarks}>
-                <FaEraser />
+                <FaRedo />
                 <span className="mp-role__text">
-                  <strong>Nueva ronda</strong>
-                  <span>Quita tus marcas y te quedas con los mismos cartones.</span>
+                  <strong>Repetir con mi cartón</strong>
+                  <span>Quito mis marcas y sigo con las mismas cartas.</span>
                 </span>
               </button>
 
               <button type="button" className="mp-role" onClick={() => setConfirmNewBoards(true)}>
                 <FaDice />
                 <span className="mp-role__text">
-                  <strong>Pedir otros cartones</strong>
-                  <span>Estrenas código de jugador y te tocan cartones nuevos.</span>
+                  <strong>Cartón nuevo</strong>
+                  <span>Me tocan otras cartas para la siguiente ronda.</span>
                 </span>
-              </button>
-
-              <div className="mp-win__markers">
-                <span className="mp-field__label">Con qué marcas</span>
-                <div className="lot-segmented" role="group" aria-label="Tipo de marcador">
-                  {MARKER_KINDS.map((kind) => (
-                    <button
-                      key={kind.id}
-                      type="button"
-                      className={`lot-segmented__option ${session.marker === kind.id ? "is-active" : ""}`}
-                      onClick={() => changeMarker(kind.id)}
-                      aria-pressed={session.marker === kind.id}
-                    >
-                      {kind.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button type="button" className="lot-btn lot-btn--ghost lot-btn--block" onClick={() => setShowHelp(true)}>
-                <FaQuestionCircle /> Cómo funciona
-              </button>
-
-              <button type="button" className="lot-btn lot-btn--danger lot-btn--block" onClick={leave}>
-                <FaSignOutAlt /> Salir de la partida
               </button>
             </div>
           </div>
@@ -231,19 +224,29 @@ const PlayerScreen = ({ route, onExit }) => {
 
       {/* Se elige sobre el cartón ya repartido, no antes: así se ve encima de
           qué van a caer los frijoles. */}
-      {!session.marker && (
-        <div className="lot-modal-overlay" role="presentation">
-          <div className="lot-modal mp-picker-modal" role="dialog" aria-modal="true" aria-label="Elige con qué vas a marcar">
+      {pickingMarker && (
+        <div className="lot-modal-overlay lot-modal-overlay--top" onClick={changingMarker ? () => setChangingMarker(false) : undefined} role="presentation">
+          <div className="lot-modal mp-picker-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Elige con qué vas a marcar">
             <header className="lot-modal__header">
               <div className="lot-modal__heading">
                 <h2 className="lot-modal__title">¿Con qué vas a marcar?</h2>
               </div>
+              {changingMarker && (
+                <button type="button" className="lot-panel__close" onClick={() => setChangingMarker(false)} aria-label="Cerrar">
+                  <FaTimes />
+                </button>
+              )}
             </header>
 
             <div className="lot-modal__body">
               <div className="mp-picker">
                 {MARKER_KINDS.map((kind) => (
-                  <button key={kind.id} type="button" className="mp-picker__option" onClick={() => changeMarker(kind.id)}>
+                  <button
+                    key={kind.id}
+                    type="button"
+                    className={`mp-picker__option ${session.marker === kind.id ? "is-active" : ""}`}
+                    onClick={() => changeMarker(kind.id)}
+                  >
                     <span className="mp-picker__samples" aria-hidden="true">
                       {markerPreview(kind.id).map((piece, i) => (
                         <img key={i} src={piece.src} alt="" style={{ "--mp-rot": `${piece.rotation}deg`, "--mp-scale": piece.scale }} />
@@ -254,19 +257,24 @@ const PlayerScreen = ({ route, onExit }) => {
                 ))}
               </div>
 
-              <p className="lot-note">Todo tu cartón usará lo mismo. Puedes cambiarlo durante la partida.</p>
+              <p className="lot-note">Todo tu cartón usará lo mismo. Puedes cambiarlo cuando quieras.</p>
             </div>
           </div>
         </div>
       )}
+
       <ConfirmModal
         isOpen={confirmNewBoards}
-        title="¿Pedir otros cartones?"
-        confirmText="Sí, otros cartones"
+        title="¿Cartón nuevo?"
+        confirmText="Sí, dame otro"
         onConfirm={requestNewBoards}
         onCancel={() => setConfirmNewBoards(false)}
       >
-        Estrenas código de jugador. Los cartones de ahora se pierden.
+        Te tocarán otras cartas. El cartón de ahora se pierde.
+      </ConfirmModal>
+
+      <ConfirmModal isOpen={confirmLeave} title="¿Salir de la partida?" confirmText="Sí, salir" onConfirm={leave} onCancel={() => setConfirmLeave(false)}>
+        Pierdes tu cartón y tu código. Para volver tendrás que entrar otra vez con el código de la partida.
       </ConfirmModal>
 
       <HowItWorks isOpen={showHelp} onClose={() => setShowHelp(false)} />
