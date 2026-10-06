@@ -10,7 +10,8 @@ export default [
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      // __APP_VERSION__ y __APP_DATE__ los inyecta Vite con define().
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly', __APP_DATE__: 'readonly' },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },

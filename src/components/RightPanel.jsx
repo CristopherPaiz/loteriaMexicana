@@ -4,6 +4,15 @@ import VoiceButton from "./VoiceButton";
 import useModalDismiss from "../multiplayer/useModalDismiss";
 import { FaTimes, FaPrint } from "react-icons/fa";
 
+/* La versión y la fecha las inyecta Vite al compilar (ver vite.config.js).
+   Sirven para saber de un vistazo si un teléfono se quedó con una versión
+   vieja, que con varios jugadores a la vez es justo lo que cuesta averiguar. */
+const fechaDelBuild = () => {
+  const fecha = new Date(__APP_DATE__);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return fecha.toLocaleString("es", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
+
 const TIME_MIN = 3;
 const TIME_MAX = 10;
 const VOLUME_LEVELS = [1.0, 1.5, 2.0];
@@ -203,6 +212,13 @@ const RightPanel = ({
           <button type="button" className="lot-btn lot-btn--danger lot-btn--block" onClick={onOpenGenerator}>
             <FaPrint /> Generador de cartones
           </button>
+
+          <p className="lot-version">
+            <span>
+              Versión <code>{__APP_VERSION__}</code>
+            </span>
+            {fechaDelBuild() && <span className="lot-version__fecha">{fechaDelBuild()}</span>}
+          </p>
         </footer>
       </aside>
     </>

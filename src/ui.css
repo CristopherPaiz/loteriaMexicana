@@ -1205,3 +1205,28 @@ body {
     padding-right: 14px;
   }
 }
+
+/* Versión y fecha, al pie de los ajustes. Discreta: solo se mira cuando algo
+   va raro y hay que comprobar si un teléfono se quedó atrás. */
+.lot-version {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--lot-text-faint);
+  text-align: center;
+}
+
+.lot-version code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--lot-text-muted);
+}
+
+.lot-version__fecha {
+  font-variant-numeric: tabular-nums;
+}

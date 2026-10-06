@@ -2,17 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
-      "comment": "El service worker debe revalidarse siempre: si el navegador lo sirve de su propia caché, nunca llega a ver la versión nueva y el aviso no aparece.",
       "source": "/sw.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
-      "comment": "El HTML manda a los assets con hash; si se cachea, apunta a los viejos.",
       "source": "/index.html",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
-      "comment": "Los assets llevan hash en el nombre: cambiarlos cambia la URL, así que se pueden guardar para siempre.",
       "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     }
