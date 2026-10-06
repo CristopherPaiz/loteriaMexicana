@@ -7,7 +7,7 @@ import HowItWorks from "./HowItWorks";
 import useModalDismiss from "../../multiplayer/useModalDismiss";
 import { buildPlayerBoards } from "../../multiplayer/boards";
 import { createPlayerCode, decodeGameCode, formatCode } from "../../multiplayer/codes";
-import { getMode } from "../../multiplayer/modes";
+import { checkBoard, getMode } from "../../multiplayer/modes";
 import { MARKER_KINDS, markerFor, markerPreview } from "../../multiplayer/markers";
 import { clearPlayerSession, joinRoom, loadPlayerSession, savePlayerSession } from "../../multiplayer/session";
 
@@ -65,6 +65,24 @@ const PlayerScreen = ({ route, onExit }) => {
   const boards = useMemo(() => (session ? buildPlayerBoards(session.gameCode, session.playerCode, session.boardsPerPlayer) : []), [session]);
 
   const mode = getMode(session?.modeId);
+
+  /**
+   * ¿Qué cartones cumplen ya el patrón, según LAS MARCAS DEL JUGADOR?
+   *
+   * Se mira lo que él ha puesto, no lo que de verdad ha salido. Si se le pasó
+   * una carta no hay aviso y pierde igual que en la mesa: el despiste sigue
+   * siendo suyo. Esto solo evita lo contrario, que lo tenga y no se entere.
+   */
+  const listos = useMemo(
+    () =>
+      boards.map((board, index) => {
+        const suyas = new Set([...(marks[index] ?? [])].map((celda) => board[celda]));
+        return checkBoard(board, suyas, mode).won;
+      }),
+    [boards, marks, mode]
+  );
+
+  const puedeCantar = listos.some(Boolean);
 
   const toggleCell = (index) => {
     setMarks((previous) => {
@@ -155,7 +173,7 @@ const PlayerScreen = ({ route, onExit }) => {
             <button
               key={index}
               type="button"
-              className={`lot-segmented__option ${activeBoard === index ? "is-active" : ""}`}
+              className={`lot-segmented__option ${activeBoard === index ? "is-active" : ""} ${listos[index] ? "is-ready" : ""}`}
               onClick={() => setActiveBoard(index)}
               aria-pressed={activeBoard === index}
             >
@@ -177,8 +195,15 @@ const PlayerScreen = ({ route, onExit }) => {
           <FaSignOutAlt />
         </button>
 
-        <button type="button" className="lot-btn lot-btn--start mp-foot__win" onClick={() => setShowWin(true)}>
-          <FaTrophy /> ¡Lotería!
+        {/* Cuando sus propias marcas completan el patrón, el botón lo dice.
+            No abre nada solo: cantar sigue siendo cosa del jugador. */}
+        <button
+          type="button"
+          className={`lot-btn lot-btn--start mp-foot__win ${puedeCantar ? "is-ready" : ""}`}
+          onClick={() => setShowWin(true)}
+          aria-live="polite"
+        >
+          <FaTrophy /> {puedeCantar ? "¡Ya puedes cantar!" : "¡Lotería!"}
         </button>
       </footer>
 

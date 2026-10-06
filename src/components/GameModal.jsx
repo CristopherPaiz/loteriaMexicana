@@ -2,7 +2,14 @@ import PropTypes from "prop-types";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import useModalDismiss from "../multiplayer/useModalDismiss";
 
-const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Confirmar", cancelText = "Cancelar", showCancel = true }) => {
+/**
+ * Modal del juego de siempre.
+ *
+ * Con `choices` deja de ser una pregunta de sí/no y pasa a ser una lista de
+ * opciones grandes, cada una con su verbo y su consecuencia. Es la forma que
+ * entiende cualquiera sin leer un párrafo antes.
+ */
+const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText = "Confirmar", cancelText = "Cancelar", showCancel = true, choices = null }) => {
   // El botón "atrás" del teléfono cierra el modal, no la app.
   useModalDismiss(isOpen, () => onCancel?.());
 
@@ -13,6 +20,19 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
       <div className="game-modal-content">
         <h2 className="game-modal-title">{title}</h2>
         <div className="game-modal-body">{children}</div>
+        {choices ? (
+          <div className="game-modal-choices">
+            {choices.map((choice) => (
+              <button key={choice.key} type="button" className={`mp-role ${choice.tone === "peligro" ? "mp-role--peligro" : "mp-role--si"}`} onClick={choice.onSelect}>
+                {choice.icon}
+                <span className="mp-role__text">
+                  <strong>{choice.title}</strong>
+                  <span>{choice.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
         <div className="game-modal-actions">
           {showCancel && (
             <button type="button" className="lot-btn lot-btn--ghost" onClick={onCancel}>
@@ -23,6 +43,7 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
             <FaCheck /> {confirmText}
           </button>
         </div>
+        )}
       </div>
       <style>{`
         .game-modal-overlay {
@@ -69,6 +90,13 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
           font-size: 1.1rem;
           color: #ccc;
           line-height: 1.6;
+        }
+
+        .game-modal-choices {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          text-align: left;
         }
 
         .game-modal-actions {
@@ -123,11 +151,21 @@ GameModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   title: PropTypes.string.isRequired,
   children: PropTypes.node,
-  onConfirm: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func,
   onCancel: PropTypes.func,
   confirmText: PropTypes.string,
   cancelText: PropTypes.string,
   showCancel: PropTypes.bool,
+  choices: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      icon: PropTypes.node,
+      title: PropTypes.string.isRequired,
+      hint: PropTypes.string,
+      tone: PropTypes.oneOf(["si", "peligro"]),
+      onSelect: PropTypes.func.isRequired,
+    })
+  ),
 };
 
 export default GameModal;

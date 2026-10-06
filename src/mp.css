@@ -1336,3 +1336,95 @@ button.mp-cell:active {
 .mp-role--back > svg {
   color: var(--lot-green);
 }
+
+/* ---------- Opciones grandes: sí / no, con su consecuencia ---------- */
+
+.mp-role--si {
+  border-color: rgba(42, 157, 143, 0.5);
+  background: rgba(42, 157, 143, 0.12);
+}
+
+.mp-role--si:hover {
+  background: rgba(42, 157, 143, 0.2);
+}
+
+.mp-role--si > svg {
+  color: var(--lot-green);
+}
+
+.mp-role--peligro {
+  border-color: rgba(230, 57, 70, 0.4);
+  background: rgba(230, 57, 70, 0.08);
+}
+
+.mp-role--peligro:hover {
+  background: rgba(230, 57, 70, 0.16);
+}
+
+.mp-role--peligro > svg {
+  color: var(--lot-red);
+}
+
+/* ---------- Reanudar la partida de antes ---------- */
+
+.lot-resume {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.lot-resume__card {
+  width: 110px;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+.lot-resume__count {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--lot-text-muted);
+}
+
+.lot-resume__count strong {
+  color: var(--lot-text);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- "Ya puedes cantar" ---------- */
+
+/* El aviso late despacio: llama la atención sin tapar el cartón ni robarle
+   al jugador el momento de cantar. */
+.mp-foot__win.is-ready {
+  animation: mp-listo 1.4s ease-in-out infinite;
+}
+
+@keyframes mp-listo {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px rgba(42, 157, 143, 0.32);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(42, 157, 143, 0.32), 0 0 0 6px rgba(42, 157, 143, 0.28);
+  }
+}
+
+/* La pestaña del cartón que ya está listo lleva un punto verde. */
+.mp-board-tabs .lot-segmented__option.is-ready::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--lot-green);
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-foot__win.is-ready {
+    animation: none;
+    box-shadow: 0 8px 24px rgba(42, 157, 143, 0.32), 0 0 0 4px rgba(42, 157, 143, 0.4);
+  }
+}

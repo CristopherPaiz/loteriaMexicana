@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
+import { FaPlay, FaRedo } from "react-icons/fa";
 import TopPanel from "./components/TopPanel";
 import MainPanel from "./components/MainPanel";
 import RightPanel from "./components/RightPanel";
@@ -482,6 +483,13 @@ const Loteria = ({ openJoin = false }) => {
     });
   };
 
+  /** Tirar la partida guardada y empezar de cero. */
+  const descartarPartidaGuardada = () => {
+    setShowResumeConfirm(false);
+    localStorage.removeItem(STORAGE_KEY);
+    setSavedGameState(null);
+  };
+
   const resumeSavedGame = () => {
     if (!savedGameState) return;
 
@@ -758,31 +766,46 @@ const Loteria = ({ openJoin = false }) => {
         <p>¿Estás seguro de que quieres detener el juego? Se perderá el progreso actual.</p>
       </GameModal>
 
-      {/* Modal de confirmación para reanudar juego */}
+      {/* Pregunta de reanudar.
+
+          Va con opciones grandes en vez de dos botones sueltos: antes la
+          opción destructiva ("Nuevo Juego") llevaba un icono de equis, que
+          cualquiera lee como "cancelar", y acababa borrando la partida. */}
       <GameModal
         isOpen={showResumeConfirm}
-        title="Juego Encontrado"
-        onConfirm={resumeSavedGame}
-        onCancel={() => {
-          setShowResumeConfirm(false);
-          localStorage.removeItem(STORAGE_KEY);
-          setSavedGameState(null);
-        }}
-        confirmText="Reanudar"
-        cancelText="Nuevo Juego"
+        title="¿Seguimos la partida?"
+        onCancel={descartarPartidaGuardada}
+        choices={[
+          {
+            key: "seguir",
+            icon: <FaPlay />,
+            title: "Sí, seguir jugando",
+            hint: `Quedan ${savedGameState?.deck?.length ?? 0} cartas por cantar.`,
+            tone: "si",
+            onSelect: resumeSavedGame,
+          },
+          {
+            key: "nueva",
+            icon: <FaRedo />,
+            title: "No, empezar otra",
+            hint: "Se borra la partida de antes.",
+            tone: "peligro",
+            onSelect: descartarPartidaGuardada,
+          },
+        ]}
       >
-        <p>Se encontró un juego previo incompleto.</p>
         {savedGameState && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10px" }}>
-            <p style={{ fontSize: "0.9rem", marginBottom: "10px" }}>Última carta:</p>
+          <div className="lot-resume">
             <CardImage
               card={savedGameState.displayedCard}
               typeCard={savedGameState.typeCard || typeCard}
               getCardImageUrl={getCardImageUrl}
-              alt="Última carta"
-              style={{ width: "80px", borderRadius: "8px", boxShadow: "0 4px 8px rgba(0,0,0,0.3)" }}
+              alt="Última carta cantada"
+              className="lot-resume__card"
             />
-            <p style={{ fontSize: "0.8rem", marginTop: "10px", opacity: 0.7 }}>Cartas restantes: {savedGameState.deck.length}</p>
+            <p className="lot-resume__count">
+              Ibas por la carta <strong>{CARD_LENGTH - (savedGameState.deck?.length ?? 0)}</strong> de {CARD_LENGTH}
+            </p>
           </div>
         )}
       </GameModal>
