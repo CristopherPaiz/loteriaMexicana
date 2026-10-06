@@ -23,7 +23,7 @@ const GameModal = ({ isOpen, title, children, onConfirm, onCancel, confirmText =
         {choices ? (
           <div className="game-modal-choices">
             {choices.map((choice) => (
-              <button key={choice.key} type="button" className={`mp-role ${choice.tone === "peligro" ? "mp-role--peligro" : "mp-role--si"}`} onClick={choice.onSelect}>
+              <button key={choice.key} type="button" className={`mp-role ${choice.tone ? `mp-role--${choice.tone}` : ""}`.trim()} onClick={choice.onSelect}>
                 {choice.icon}
                 <span className="mp-role__text">
                   <strong>{choice.title}</strong>

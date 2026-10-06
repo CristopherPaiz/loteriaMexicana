@@ -26,12 +26,3 @@ if (import.meta.env.PROD) {
   if ("requestIdleCallback" in window) window.requestIdleCallback(prefetchLazyChunks, { timeout: 10000 });
   else setTimeout(prefetchLazyChunks, 4000);
 }
-
-// Service worker: solo en producción, para no interferir con el HMR de Vite.
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.error("No se pudo registrar el service worker:", error);
-    });
-  });
-}
